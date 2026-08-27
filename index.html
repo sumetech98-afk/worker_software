@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance - Google Drive Backup</title>
+    <title>Attendance - Personal Folder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -111,7 +111,7 @@
         .badge-excel { background: #28a745; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-edit { background: #fdcb6e; color: #2d3436; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-advance { background: #e17055; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
-        .badge-drive { background: #4285F4; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+        .badge-folder { background: #6c5ce7; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label {
@@ -167,8 +167,8 @@
         .btn-info:hover { background: #5a9fd6; }
         .btn-advance { background: #e17055; color: white; }
         .btn-advance:hover { background: #d63031; }
-        .btn-drive { background: #4285F4; color: white; }
-        .btn-drive:hover { background: #3367d6; }
+        .btn-folder { background: #6c5ce7; color: white; }
+        .btn-folder:hover { background: #5a4bd1; }
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
         .table-container {
@@ -354,24 +354,24 @@
             width: 0%;
         }
 
-        .drive-box {
-            background: linear-gradient(135deg, #e8f0fe, #d2e3fc);
+        .folder-box {
+            background: #f3f0ff;
             padding: 20px;
             border-radius: 12px;
-            border: 2px solid #4285F4;
+            border: 2px solid #6c5ce7;
             margin-top: 15px;
         }
-        .drive-box h4 {
-            color: #1a73e8;
+        .folder-box h4 {
+            color: #4a2c8a;
             margin-bottom: 8px;
             font-size: 18px;
         }
-        .drive-box p {
+        .folder-box p {
             font-size: 14px;
-            color: #1a73e8;
+            color: #4a2c8a;
             margin-bottom: 15px;
         }
-        .drive-status {
+        .folder-status {
             display: none;
             margin-top: 10px;
             padding: 12px;
@@ -379,51 +379,30 @@
             font-weight: 500;
             font-size: 14px;
         }
-        .drive-status.show {
+        .folder-status.show {
             display: block;
             animation: fade 0.3s;
         }
-        .drive-status.success {
+        .folder-status.success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        .drive-status.saving {
+        .folder-status.saving {
             background: #cce5ff;
             color: #004085;
             border: 1px solid #b8daff;
         }
-        .drive-status.error {
+        .folder-status.error {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        .drive-status.info {
+        .folder-status.info {
             background: #fff3cd;
             color: #856404;
             border: 1px solid #ffc107;
         }
-
-        .drive-file-list {
-            margin: 10px 0;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        .drive-file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: white;
-            border-radius: 6px;
-            margin: 4px 0;
-            border: 1px solid #e9ecef;
-            font-size: 13px;
-        }
-        .drive-file-item .name { color: #1a73e8; cursor: pointer; }
-        .drive-file-item .name:hover { text-decoration: underline; }
-        .drive-file-item .date { color: #6c757d; font-size: 11px; }
-        .drive-file-item .size { font-size: 11px; color: #6c757d; }
 
         .folder-info {
             background: #e3f2fd;
@@ -445,28 +424,40 @@
             border-radius: 4px;
             color: #0984e3;
         }
-        .folder-info .open-folder-btn {
-            background: #4285F4;
-            color: white;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .folder-info .open-folder-btn:hover {
-            background: #3367d6;
-        }
 
-        .setup-guide {
-            background: #fff3cd;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #ffc107;
+        .folder-file-list {
             margin: 10px 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .folder-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin: 4px 0;
+            border: 1px solid #e9ecef;
             font-size: 13px;
         }
-        .setup-guide strong { color: #856404; }
+        .folder-file-item .name { color: #6c5ce7; }
+        .folder-file-item .date { color: #6c757d; font-size: 11px; }
+        .folder-file-item .size { font-size: 11px; color: #6c757d; }
+
+        .select-folder-btn {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .select-folder-btn:hover {
+            background: #5a4bd1;
+        }
 
         @media (max-width: 992px) {
             .row { grid-template-columns: 1fr; }
@@ -485,7 +476,7 @@
 <div class="container">
     <h1>
         <span>👷 Attendance System</span>
-        <span class="header-right">☁️ Google Drive Backup</span>
+        <span class="header-right">📁 Personal Folder</span>
     </h1>
 
     <div class="company-name-input">
@@ -499,7 +490,7 @@
         <button class="tab" onclick="showTab('workers')">👥 Workers</button>
         <button class="tab" onclick="showTab('advances')">💰 Advances</button>
         <button class="tab" onclick="showTab('reports')">📊 Reports</button>
-        <button class="tab" onclick="showTab('drive')">☁️ Drive</button>
+        <button class="tab" onclick="showTab('folder')">📁 Folder</button>
     </div>
 
     <!-- TAB 1: ATTENDANCE -->
@@ -896,78 +887,49 @@
         </div>
     </div>
 
-    <!-- TAB 5: GOOGLE DRIVE -->
-    <div id="tab-drive" class="tab-content">
+    <!-- TAB 5: PERSONAL FOLDER -->
+    <div id="tab-folder" class="tab-content">
         <div class="card">
             <div class="card-title">
-                ☁️ Google Drive Backup
-                <span class="badge-drive">Auto Backup</span>
+                📁 Personal Folder
+                <span class="badge-folder">Auto Save</span>
             </div>
             
             <div class="folder-info">
-                <span>📂 Google Drive Folder:</span>
-                <span class="path">📁 Attendance_Backup</span>
-                <button class="open-folder-btn" onclick="openDriveFolder()">📂 Open Folder</button>
+                <span>📂 Folder Location:</span>
+                <span class="path" id="folderPath">🔴 Select folder first</span>
+                <span style="font-size:12px;color:#6c757d;">Click "Select Folder" to choose</span>
             </div>
 
-            <div class="setup-guide">
-                <strong>📌 Files kahan save hoti hain?</strong><br>
-                Saari files <strong>Google Drive → Attendance_Backup</strong> folder mein save hoti hain.<br>
-                <strong>"Open Folder"</strong> button click karein - seedha folder open ho jayega!
-            </div>
-
-            <div class="drive-box">
-                <h4>☁️ Sign in with Google</h4>
+            <div class="folder-box">
+                <h4>📁 Select Your Personal Folder</h4>
                 <p>
-                    <strong>Ek baar sign in karein</strong> - uske baad har data change par 
-                    <strong>auto backup</strong> Google Drive mein ho jayega.
+                    <strong>Pehle ek folder select karein</strong> - uske baad har data change par 
+                    <strong>auto-save</strong> usi folder mein ho jayega.
                 </p>
                 
-                <div id="driveSignInSection">
-                    <button class="btn btn-drive" onclick="signInWithGoogle()" style="font-size:18px;padding:14px 35px;">
-                        🔐 Sign in with Google
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                    <button class="select-folder-btn" onclick="selectFolder()">
+                        📁 Select Folder
                     </button>
-                    <div style="margin-top:8px;font-size:12px;color:#6c757d;">
-                        Click karte hi Google Sign In page open hoga
-                    </div>
+                    <button class="btn btn-success" onclick="saveDataToFolder()" style="font-size:14px;padding:10px 20px;">
+                        💾 Save Now
+                    </button>
+                    <button class="btn btn-info" onclick="listFolderFiles()" style="font-size:14px;padding:10px 20px;">
+                        📂 View Files
+                    </button>
                 </div>
                 
-                <div id="driveUserSection" style="display:none;">
-                    <div style="display:flex;align-items:center;gap:12px;padding:10px 15px;background:white;border-radius:8px;margin:10px 0;">
-                        <div style="width:40px;height:40px;border-radius:50%;background:#4285F4;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;" id="userAvatar">U</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:600;color:#2d3436;" id="userName">User</div>
-                            <div style="font-size:12px;color:#6c757d;" id="userEmail">user@gmail.com</div>
-                        </div>
-                        <span style="font-size:12px;padding:4px 12px;border-radius:20px;background:#d4edda;color:#155724;">✅ Connected</span>
-                    </div>
-                    
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-                        <button class="btn btn-drive" onclick="backupToDrive()" style="font-size:16px;padding:12px 25px;">
-                            ☁️ Backup Now
-                        </button>
-                        <button class="btn btn-primary" onclick="listDriveFiles()" style="font-size:14px;padding:10px 20px;">
-                            📂 View Backups
-                        </button>
-                        <button class="btn btn-success" onclick="openDriveFolder()" style="font-size:14px;padding:10px 20px;">
-                            📁 Open Folder
-                        </button>
-                        <button class="btn btn-danger" onclick="signOut()" style="font-size:14px;padding:10px 20px;">
-                            🚪 Sign Out
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="driveStatus" class="drive-status">
+                <div id="folderStatus" class="folder-status">
                     Status message here
                 </div>
                 
                 <div style="margin-top:10px;font-size:12px;color:#6c757d;">
-                    ⏱️ Last backup: <span id="lastBackupTime">Never</span>
+                    ⏱️ Last saved: <span id="lastSaveTime">Never</span>
                 </div>
                 
-                <div class="drive-file-list" id="driveFileList">
-                    <div class="text-muted text-center">Sign in to see your backups</div>
+                <div class="folder-file-list" id="folderFileList">
+                    <div class="text-muted text-center">Select a folder first</div>
                 </div>
             </div>
             
@@ -1028,11 +990,6 @@
 
 <script>
 // ============================================
-// CONFIGURATION - CHANGE THIS
-// ============================================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBQLcpiF9oakRtcA-nBj3s3WR5d02Qa8beuoLTtpnGsoK0hskhXS1htn5qh2fUC3tL/exec'; // 🔴 Paste your Apps Script URL here
-
-// ============================================
 // DATA
 // ============================================
 let data = {
@@ -1048,57 +1005,70 @@ let data = {
     nextWorkerId: 5,
     nextAttId: 1,
     nextAdvanceId: 1,
-    driveUser: null,
-    lastBackupTime: null,
-    driveFolderId: null
+    lastSaveTime: null,
+    folderHandle: null,
+    folderName: null
 };
 
 // ============================================
-// GOOGLE DRIVE FUNCTIONS
+// FOLDER SYSTEM - File System Access API
 // ============================================
 
-function openDriveFolder() {
-    // Open Google Drive folder - user ko direct folder dikhega
-    window.open('https://drive.google.com/drive/folders', '_blank');
-    showDriveStatus('📂 Google Drive folder opened in new tab', 'info');
-    setTimeout(() => document.getElementById('driveStatus').className = 'drive-status', 3000);
+/**
+ * Select a folder using File System Access API
+ */
+async function selectFolder() {
+    try {
+        // Check if browser supports File System Access API
+        if (!('showDirectoryPicker' in window)) {
+            showFolderStatus('❌ Your browser does not support File System Access API. Please use Chrome or Edge.', 'error');
+            return;
+        }
+
+        showFolderStatus('⏳ Opening folder picker...', 'saving');
+        
+        // Open folder picker
+        const folderHandle = await window.showDirectoryPicker();
+        
+        // Save folder handle
+        data.folderHandle = folderHandle;
+        data.folderName = folderHandle.name;
+        
+        // Update display
+        document.getElementById('folderPath').textContent = '📁 ' + folderHandle.name;
+        document.getElementById('folderPath').style.color = '#0984e3';
+        
+        // Save to localStorage (can't save handle, but save name)
+        localStorage.setItem('folderName', folderHandle.name);
+        
+        showFolderStatus('✅ Folder selected: ' + folderHandle.name, 'success');
+        
+        // Auto-save after folder selection
+        setTimeout(() => saveDataToFolder(), 500);
+        
+    } catch(err) {
+        if (err.name === 'AbortError' || err.message.includes('abort')) {
+            showFolderStatus('ℹ️ Folder selection cancelled', 'info');
+        } else {
+            console.error('Folder selection error:', err);
+            showFolderStatus('❌ Error selecting folder: ' + err.message, 'error');
+        }
+    }
 }
 
-function signInWithGoogle() {
-    showDriveStatus('⏳ Redirecting to Google Sign In...', 'saving');
+/**
+ * Save data to selected folder
+ */
+async function saveDataToFolder() {
+    if (!data.folderHandle) {
+        showFolderStatus('⚠️ Please select a folder first! Click "Select Folder"', 'error');
+        return;
+    }
     
-    // Open Apps Script URL for authentication
-    const authUrl = APPS_SCRIPT_URL + '?action=auth';
-    window.open(authUrl, '_blank', 'width=500,height=600');
-    
-    // Show info
-    showDriveStatus('📌 Please sign in with your Google account in the popup window', 'info');
-    
-    // After sign in, enable backup
-    setTimeout(() => {
-        document.getElementById('driveSignInSection').style.display = 'none';
-        document.getElementById('driveUserSection').style.display = 'block';
-        document.getElementById('userAvatar').textContent = 'U';
-        document.getElementById('userName').textContent = 'User';
-        document.getElementById('userEmail').textContent = 'Connected to Google Drive';
-        showDriveStatus('✅ Connected to Google Drive! Auto-backup is enabled.', 'success');
-        document.getElementById('driveFileList').innerHTML = '<div class="text-muted text-center">Click "View Backups" to see files</div>';
-    }, 5000);
-}
-
-function signOut() {
-    document.getElementById('driveSignInSection').style.display = 'block';
-    document.getElementById('driveUserSection').style.display = 'none';
-    document.getElementById('driveFileList').innerHTML = '<div class="text-muted text-center">Sign in to see your backups</div>';
-    showDriveStatus('👋 Signed out successfully', 'info');
-    setTimeout(() => document.getElementById('driveStatus').className = 'drive-status', 3000);
-}
-
-function backupToDrive() {
-    showDriveStatus('⏳ Creating backup...', 'saving');
+    showFolderStatus('⏳ Creating Excel file...', 'saving');
     
     try {
-        // Generate Excel file
+        // Create Excel workbook
         const wb = XLSX.utils.book_new();
         
         // Workers sheet
@@ -1130,100 +1100,124 @@ function backupToDrive() {
         const ws4 = XLSX.utils.aoa_to_sheet(cData);
         XLSX.utils.book_append_sheet(wb, ws4, 'Info');
         
+        // Generate Excel file
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
         
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64 = e.target.result.split(',')[1];
-            
-            const now = new Date();
-            const timestamp = now.getFullYear() + '-' + 
-                             String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                             String(now.getDate()).padStart(2, '0') + '_' +
-                             String(now.getHours()).padStart(2, '0') + '-' +
-                             String(now.getMinutes()).padStart(2, '0') + '-' +
-                             String(now.getSeconds()).padStart(2, '0');
-            const fileName = `Attendance_Backup_${timestamp}.xlsx`;
-            
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'upload',
-                    fileName: fileName,
-                    fileData: base64
-                })
-            })
-            .then(() => {
-                data.lastBackupTime = Date.now();
-                saveToStorage();
-                document.getElementById('lastBackupTime').textContent = new Date().toLocaleString();
-                showDriveStatus('✅ Backup successful! File: ' + fileName + ' → Google Drive/Attendance_Backup', 'success');
-                
-                // Show folder link
-                setTimeout(() => {
-                    document.getElementById('driveStatus').innerHTML = 
-                        '✅ Backup successful! <br>📂 <strong>Google Drive → Attendance_Backup</strong> folder mein save hua hai. <br>' +
-                        '<button class="btn btn-success" onclick="openDriveFolder()" style="margin-top:5px;font-size:12px;padding:4px 12px;">📁 Open Folder</button>';
-                }, 2000);
-            })
-            .catch(err => {
-                console.error('Upload error:', err);
-                showDriveStatus('❌ Backup failed. Please try again.', 'error');
-            });
-        };
-        reader.readAsDataURL(blob);
+        // Create filename with timestamp
+        const now = new Date();
+        const timestamp = now.getFullYear() + '-' + 
+                         String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(now.getDate()).padStart(2, '0') + '_' +
+                         String(now.getHours()).padStart(2, '0') + '-' +
+                         String(now.getMinutes()).padStart(2, '0') + '-' +
+                         String(now.getSeconds()).padStart(2, '0');
+        const filename = `Attendance_Data_${timestamp}.xlsx`;
         
-    } catch(e) {
-        console.error('Backup error:', e);
-        showDriveStatus('❌ Backup failed: ' + e.message, 'error');
+        // Save file to selected folder
+        const fileHandle = await data.folderHandle.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        
+        // Update status
+        data.lastSaveTime = Date.now();
+        saveToStorage();
+        updateLastSaveTime();
+        
+        showFolderStatus(
+            '✅ File saved successfully!<br>' +
+            '📄 File: <strong>' + filename + '</strong><br>' +
+            '📂 Location: <strong>' + data.folderName + '</strong>',
+            'success'
+        );
+        
+        // Refresh file list
+        setTimeout(listFolderFiles, 1000);
+        
+    } catch(err) {
+        console.error('Save error:', err);
+        showFolderStatus('❌ Error: ' + err.message, 'error');
     }
 }
 
-function listDriveFiles() {
-    showDriveStatus('⏳ Loading files...', 'saving');
+/**
+ * List files in the selected folder
+ */
+async function listFolderFiles() {
+    if (!data.folderHandle) {
+        showFolderStatus('⚠️ Please select a folder first!', 'error');
+        return;
+    }
     
-    fetch(APPS_SCRIPT_URL + '?action=list')
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            const fileList = document.getElementById('driveFileList');
-            if (result.files.length === 0) {
-                fileList.innerHTML = '<div class="text-muted text-center">No backup files found in Attendance_Backup folder</div>';
-                showDriveStatus('📂 No backup files found', 'info');
-                return;
+    showFolderStatus('📂 Loading files...', 'saving');
+    
+    try {
+        const entries = [];
+        const fileList = document.getElementById('folderFileList');
+        
+        // Get all entries from folder
+        for await (const entry of data.folderHandle.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.xlsx')) {
+                const file = await entry.getFile();
+                entries.push({
+                    name: entry.name,
+                    size: file.size,
+                    time: file.lastModified
+                });
             }
-            
-            fileList.innerHTML = result.files.map(file => `
-                <div class="drive-file-item">
-                    <span class="name" onclick="window.open('${file.webViewLink}','_blank')">📄 ${file.name}</span>
-                    <span class="date">${new Date(file.modifiedTime).toLocaleString()}</span>
-                    <span class="size">${(file.size/1024).toFixed(1)} KB</span>
-                </div>
-            `).join('');
-            
-            showDriveStatus('📂 Found ' + result.files.length + ' backup files in Attendance_Backup folder', 'success');
-        } else {
-            showDriveStatus('❌ Error: ' + result.error, 'error');
         }
-    })
-    .catch(err => {
+        
+        // Sort by time descending
+        entries.sort((a, b) => b.time - a.time);
+        
+        if (entries.length === 0) {
+            fileList.innerHTML = '<div class="text-muted text-center">No Excel files found in this folder</div>';
+            showFolderStatus('📂 No Excel files found', 'info');
+            return;
+        }
+        
+        fileList.innerHTML = entries.map(file => `
+            <div class="folder-file-item">
+                <span class="name">📄 ${file.name}</span>
+                <span class="date">${new Date(file.time).toLocaleString()}</span>
+                <span class="size">${(file.size/1024).toFixed(1)} KB</span>
+            </div>
+        `).join('');
+        
+        showFolderStatus('📂 Found ' + entries.length + ' Excel files', 'success');
+        
+    } catch(err) {
         console.error('List error:', err);
-        showDriveStatus('❌ Error loading files', 'error');
-    });
+        showFolderStatus('❌ Error listing files: ' + err.message, 'error');
+    }
 }
 
-function showDriveStatus(message, type = 'info') {
-    const status = document.getElementById('driveStatus');
+/**
+ * Trigger auto save when data changes
+ */
+function triggerAutoSave(reason = 'Data changed') {
+    console.log('🔄 Auto-save triggered:', reason);
+    if (data.folderHandle) {
+        saveDataToFolder();
+    } else {
+        showFolderStatus('ℹ️ Folder not selected. Click "Select Folder" first.', 'info');
+    }
+}
+
+/**
+ * Show folder status message
+ */
+function showFolderStatus(message, type = 'info') {
+    const status = document.getElementById('folderStatus');
     status.innerHTML = message;
-    status.className = 'drive-status show ' + type;
+    status.className = 'folder-status show ' + type;
 }
 
-function triggerAutoBackup(reason = 'Data changed') {
-    console.log('🔄 Auto-backup triggered:', reason);
-    backupToDrive();
+function updateLastSaveTime() {
+    if (data.lastSaveTime) {
+        document.getElementById('lastSaveTime').textContent = new Date(data.lastSaveTime).toLocaleString();
+    }
 }
 
 // ============================================
@@ -1237,6 +1231,15 @@ function init() {
     loadAttendance();
     loadAdvances();
     initDateFields();
+    updateLastSaveTime();
+    
+    // Check if folder name saved
+    const folderName = localStorage.getItem('folderName');
+    if (folderName) {
+        document.getElementById('folderPath').textContent = '📁 ' + folderName;
+        document.getElementById('folderPath').style.color = '#0984e3';
+        showFolderStatus('ℹ️ Folder "' + folderName + '" was selected previously. Click "Select Folder" to re-select.', 'info');
+    }
 }
 
 function loadFromStorage() {
@@ -1253,9 +1256,9 @@ function loadFromStorage() {
             document.getElementById('companyName').value = company;
             data.companyName = company;
         }
-        const lastBackup = localStorage.getItem('lastBackupTime');
-        if (lastBackup) {
-            data.lastBackupTime = lastBackup;
+        const lastSave = localStorage.getItem('lastSaveTime');
+        if (lastSave) {
+            data.lastSaveTime = lastSave;
         }
     } catch(e) {}
     
@@ -1267,7 +1270,7 @@ function loadFromStorage() {
 function saveToStorage() {
     localStorage.setItem('attendanceData', JSON.stringify(data));
     localStorage.setItem('companyName', data.companyName);
-    if (data.lastBackupTime) localStorage.setItem('lastBackupTime', data.lastBackupTime);
+    if (data.lastSaveTime) localStorage.setItem('lastSaveTime', data.lastSaveTime);
 }
 
 function saveCompanyName() {
@@ -1514,7 +1517,7 @@ function saveWorker() {
     saveToStorage();
     loadWorkers();
     populateAllDropdowns();
-    triggerAutoBackup('Worker added');
+    triggerAutoSave('Worker added');
     alert('✅ Worker added!');
 }
 
@@ -1540,7 +1543,7 @@ function updateWorker() {
         populateAllDropdowns();
         loadAttendance();
         loadAdvances();
-        triggerAutoBackup('Worker updated');
+        triggerAutoSave('Worker updated');
         alert('✅ Worker updated!');
     }
 }
@@ -1558,7 +1561,7 @@ function deleteWorker() {
     populateAllDropdowns();
     loadAttendance();
     loadAdvances();
-    triggerAutoBackup('Worker deleted');
+    triggerAutoSave('Worker deleted');
     alert('✅ Worker deleted!');
 }
 
@@ -1673,7 +1676,7 @@ function saveAttendance() {
     clearAttForm();
     saveToStorage();
     loadAttendance();
-    triggerAutoBackup('Attendance added');
+    triggerAutoSave('Attendance added');
     alert('✅ Attendance saved!');
 }
 
@@ -1705,7 +1708,7 @@ function updateAttendance() {
         clearAttForm();
         saveToStorage();
         loadAttendance();
-        triggerAutoBackup('Attendance updated');
+        triggerAutoSave('Attendance updated');
         alert('✅ Attendance updated!');
     }
 }
@@ -1718,7 +1721,7 @@ function deleteAttendance() {
     clearAttForm();
     saveToStorage();
     loadAttendance();
-    triggerAutoBackup('Attendance deleted');
+    triggerAutoSave('Attendance deleted');
     alert('✅ Record deleted!');
 }
 
@@ -1835,7 +1838,7 @@ function saveAdvance() {
     clearAdvanceForm();
     saveToStorage();
     loadAdvances();
-    triggerAutoBackup('Advance added');
+    triggerAutoSave('Advance added');
     alert('✅ Advance saved!');
 }
 
@@ -1856,7 +1859,7 @@ function updateAdvance() {
         clearAdvanceForm();
         saveToStorage();
         loadAdvances();
-        triggerAutoBackup('Advance updated');
+        triggerAutoSave('Advance updated');
         alert('✅ Advance updated!');
     }
 }
@@ -1869,7 +1872,7 @@ function deleteAdvance() {
     clearAdvanceForm();
     saveToStorage();
     loadAdvances();
-    triggerAutoBackup('Advance deleted');
+    triggerAutoSave('Advance deleted');
     alert('✅ Advance deleted!');
 }
 
@@ -2074,32 +2077,7 @@ function getMonthName(m) {
 // EXCEL FUNCTIONS
 // ============================================
 function downloadExcel() {
-    const wb = XLSX.utils.book_new();
-    const wData = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
-    data.workers.forEach(w => wData.push([w.id, w.name, w.department, w.mobile || '', w.hourlyRate, w.overtimeRate]));
-    const ws1 = XLSX.utils.aoa_to_sheet(wData);
-    XLSX.utils.book_append_sheet(wb, ws1, 'Workers');
-    
-    const aData = [['ID','Worker ID','Worker Name','Date','In','Out','Break Start','Break End','Break Hours','Net Hours','OT','Status','Salary']];
-    data.attendance.forEach(a => aData.push([a.id, a.workerId, a.workerName, a.date, a.checkIn, a.checkOut, a.breakStart||'', a.breakEnd||'', a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
-    const ws2 = XLSX.utils.aoa_to_sheet(aData);
-    XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
-    
-    const advData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
-    data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
-    const ws3 = XLSX.utils.aoa_to_sheet(advData);
-    XLSX.utils.book_append_sheet(wb, ws3, 'Advances');
-    
-    const cData = [['Company Name', data.companyName], ['Generated', new Date().toLocaleString()]];
-    const ws4 = XLSX.utils.aoa_to_sheet(cData);
-    XLSX.utils.book_append_sheet(wb, ws4, 'Info');
-    
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'attendance_data.xlsx';
-    link.click();
+    saveDataToFolder();
 }
 
 function autoUploadExcel(event) {
@@ -2209,7 +2187,7 @@ function autoUploadExcel(event) {
             loadWorkers();
             loadAttendance();
             loadAdvances();
-            triggerAutoBackup('Excel uploaded');
+            triggerAutoSave('Excel uploaded');
             
             setTimeout(() => {
                 document.getElementById('uploadProgress').classList.remove('show');
