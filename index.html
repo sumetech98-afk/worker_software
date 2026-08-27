@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worker Attendance System</title>
+    <title>Worker Attendance - Google Drive Backup</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -112,6 +112,7 @@
         .badge-edit { background: #fdcb6e; color: #2d3436; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-advance { background: #e17055; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-upload { background: #0984e3; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+        .badge-drive { background: #4285F4; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label {
@@ -169,6 +170,8 @@
         .btn-advance:hover { background: #d63031; }
         .btn-upload { background: #0984e3; color: white; }
         .btn-upload:hover { background: #0873c7; }
+        .btn-drive { background: #4285F4; color: white; }
+        .btn-drive:hover { background: #3367d6; }
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
         .table-container {
@@ -354,6 +357,91 @@
             width: 0%;
         }
 
+        .drive-box {
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4285F4;
+            margin-top: 15px;
+        }
+        .drive-box h4 {
+            color: #1a73e8;
+            margin-bottom: 8px;
+        }
+        .drive-box p {
+            font-size: 13px;
+            color: #1a73e8;
+            margin-bottom: 10px;
+        }
+        .drive-status {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .drive-status.show {
+            display: block;
+            animation: fade 0.3s;
+        }
+        .drive-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .drive-status.saving {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .drive-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .drive-status.info {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .drive-file-list {
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .drive-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 6px;
+            margin: 4px 0;
+            border: 1px solid #e9ecef;
+            font-size: 12px;
+        }
+        .drive-file-item .name { color: #1a73e8; cursor: pointer; }
+        .drive-file-item .name:hover { text-decoration: underline; }
+        .drive-file-item .date { color: #6c757d; font-size: 11px; }
+
+        .folder-info {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #0984e3;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .folder-info .path {
+            font-family: monospace;
+            font-size: 12px;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #0984e3;
+        }
+
         @media (max-width: 992px) {
             .row { grid-template-columns: 1fr; }
             .stats-grid, .stats-grid-5, .stats-grid-6 { grid-template-columns: repeat(2, 1fr); }
@@ -371,7 +459,7 @@
 <div class="container">
     <h1>
         <span>👷 Worker Attendance System</span>
-        <span class="header-right">📁 Excel Storage</span>
+        <span class="header-right">☁️ Google Drive Backup</span>
     </h1>
 
     <!-- Company Name -->
@@ -387,7 +475,7 @@
         <button class="tab" onclick="showTab('workers')">👥 Workers</button>
         <button class="tab" onclick="showTab('advances')">💰 Advances</button>
         <button class="tab" onclick="showTab('reports')">📊 Reports</button>
-        <button class="tab" onclick="showTab('excel')">📁 Excel</button>
+        <button class="tab" onclick="showTab('drive')">☁️ Google Drive</button>
     </div>
 
     <!-- TAB 1: ATTENDANCE -->
@@ -784,17 +872,63 @@
         </div>
     </div>
 
-    <!-- TAB 5: EXCEL -->
-    <div id="tab-excel" class="tab-content">
+    <!-- TAB 5: GOOGLE DRIVE -->
+    <div id="tab-drive" class="tab-content">
         <div class="card">
             <div class="card-title">
-                📁 Excel Manager
-                <span class="badge-upload">Auto Upload</span>
+                ☁️ Google Drive Backup
+                <span class="badge-drive">Auto Backup</span>
             </div>
             
-            <div class="excel-info" style="background:#e3f2fd;border-left-color:#0984e3;">
-                <span>📁 Upload Excel file - Data will be added automatically</span>
-                <span id="excelStatus">Ready</span>
+            <div class="folder-info">
+                <span>📂 Google Drive Folder:</span>
+                <span class="path" id="driveFolderPath">📁 Attendance_Backup</span>
+                <span style="font-size:12px;color:#6c757d;">All files save here</span>
+            </div>
+            
+            <!-- DRIVE BOX -->
+            <div class="drive-box">
+                <h4>☁️ Backup to Google Drive</h4>
+                <p>
+                    <strong>Har baar data change hone par auto backup Google Drive mein ho jayega</strong><br>
+                    Aap manually bhi backup kar sakte hain.
+                </p>
+                
+                <!-- Google Drive Auth Section -->
+                <div id="driveAuthSection">
+                    <button class="btn btn-drive" onclick="authenticateGoogleDrive()" style="font-size:16px;padding:12px 30px;">
+                        🔐 Sign in with Google
+                    </button>
+                    <div style="margin-top:8px;font-size:12px;color:#6c757d;">
+                        Google Drive access required for backup
+                    </div>
+                </div>
+                
+                <div id="driveActions" style="display:none;margin-top:10px;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button class="btn btn-drive" onclick="backupToDrive()" style="font-size:16px;padding:12px 30px;">
+                            ☁️ Backup Now
+                        </button>
+                        <button class="btn btn-primary" onclick="listDriveFiles()" style="font-size:14px;padding:10px 20px;">
+                            📂 List Backups
+                        </button>
+                        <button class="btn btn-danger" onclick="signOutDrive()" style="font-size:14px;padding:10px 20px;">
+                            🚪 Sign Out
+                        </button>
+                    </div>
+                    
+                    <div id="driveStatus" class="drive-status">
+                        Status message here
+                    </div>
+                    
+                    <div style="margin-top:10px;font-size:12px;color:#6c757d;">
+                        ⏱️ Last backup: <span id="lastBackupTime">Never</span>
+                    </div>
+                    
+                    <div class="drive-file-list" id="driveFileList">
+                        <div class="text-muted text-center">Click "List Backups" to see files</div>
+                    </div>
+                </div>
             </div>
             
             <!-- Upload Section -->
@@ -872,8 +1006,22 @@ let data = {
     companyName: 'My Company',
     nextWorkerId: 5,
     nextAttId: 1,
-    nextAdvanceId: 1
+    nextAdvanceId: 1,
+    folderName: 'Attendance_Backup',
+    lastBackupTime: null,
+    driveToken: null,
+    driveUser: null
 };
+
+// ============================================
+// GOOGLE DRIVE API CONFIGURATION
+// ============================================
+const DRIVE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // Replace with your client ID
+const DRIVE_API_KEY = 'YOUR_GOOGLE_API_KEY'; // Replace with your API key
+const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+
+let gapiLoaded = false;
+let tokenClient = null;
 
 // ============================================
 // INIT
@@ -886,6 +1034,9 @@ function init() {
     loadAttendance();
     loadAdvances();
     initDateFields();
+    updateFolderDisplay();
+    updateLastBackupTime();
+    loadDriveAuth();
 }
 
 function loadFromStorage() {
@@ -893,12 +1044,30 @@ function loadFromStorage() {
         const saved = localStorage.getItem('attendanceData');
         if (saved) {
             const parsed = JSON.parse(saved);
-            if (parsed.workers && parsed.workers.length > 0) data = parsed;
+            if (parsed.workers && parsed.workers.length > 0) {
+                data = parsed;
+            }
         }
         const company = localStorage.getItem('companyName');
         if (company) {
             document.getElementById('companyName').value = company;
             data.companyName = company;
+        }
+        const folder = localStorage.getItem('driveFolderName');
+        if (folder) {
+            data.folderName = folder;
+        }
+        const driveToken = localStorage.getItem('driveToken');
+        if (driveToken) {
+            data.driveToken = driveToken;
+        }
+        const driveUser = localStorage.getItem('driveUser');
+        if (driveUser) {
+            data.driveUser = driveUser;
+        }
+        const lastBackup = localStorage.getItem('lastBackupTime');
+        if (lastBackup) {
+            data.lastBackupTime = lastBackup;
         }
     } catch(e) {}
     
@@ -910,6 +1079,10 @@ function loadFromStorage() {
 function saveToStorage() {
     localStorage.setItem('attendanceData', JSON.stringify(data));
     localStorage.setItem('companyName', data.companyName);
+    localStorage.setItem('driveFolderName', data.folderName);
+    if (data.driveToken) localStorage.setItem('driveToken', data.driveToken);
+    if (data.driveUser) localStorage.setItem('driveUser', data.driveUser);
+    if (data.lastBackupTime) localStorage.setItem('lastBackupTime', data.lastBackupTime);
 }
 
 function saveCompanyName() {
@@ -918,6 +1091,26 @@ function saveCompanyName() {
         data.companyName = name;
         saveToStorage();
         alert('✅ Company name saved!');
+    }
+}
+
+function changeFolderName() {
+    const newName = prompt('Enter new folder name:', data.folderName);
+    if (newName && newName.trim()) {
+        data.folderName = newName.trim();
+        saveToStorage();
+        updateFolderDisplay();
+        alert('✅ Folder name updated!');
+    }
+}
+
+function updateFolderDisplay() {
+    document.getElementById('driveFolderPath').textContent = '📁 ' + data.folderName;
+}
+
+function updateLastBackupTime() {
+    if (data.lastBackupTime) {
+        document.getElementById('lastBackupTime').textContent = new Date(data.lastBackupTime).toLocaleString();
     }
 }
 
@@ -1156,6 +1349,7 @@ function saveWorker() {
     saveToStorage();
     loadWorkers();
     populateAllDropdowns();
+    triggerAutoBackup('Worker added');
     alert('✅ Worker added!');
 }
 
@@ -1181,6 +1375,7 @@ function updateWorker() {
         populateAllDropdowns();
         loadAttendance();
         loadAdvances();
+        triggerAutoBackup('Worker updated');
         alert('✅ Worker updated!');
     }
 }
@@ -1198,6 +1393,7 @@ function deleteWorker() {
     populateAllDropdowns();
     loadAttendance();
     loadAdvances();
+    triggerAutoBackup('Worker deleted');
     alert('✅ Worker deleted!');
 }
 
@@ -1312,6 +1508,7 @@ function saveAttendance() {
     clearAttForm();
     saveToStorage();
     loadAttendance();
+    triggerAutoBackup('Attendance added');
     alert('✅ Attendance saved!');
 }
 
@@ -1343,6 +1540,7 @@ function updateAttendance() {
         clearAttForm();
         saveToStorage();
         loadAttendance();
+        triggerAutoBackup('Attendance updated');
         alert('✅ Attendance updated!');
     }
 }
@@ -1355,6 +1553,7 @@ function deleteAttendance() {
     clearAttForm();
     saveToStorage();
     loadAttendance();
+    triggerAutoBackup('Attendance deleted');
     alert('✅ Record deleted!');
 }
 
@@ -1471,6 +1670,7 @@ function saveAdvance() {
     clearAdvanceForm();
     saveToStorage();
     loadAdvances();
+    triggerAutoBackup('Advance added');
     alert('✅ Advance saved!');
 }
 
@@ -1491,6 +1691,7 @@ function updateAdvance() {
         clearAdvanceForm();
         saveToStorage();
         loadAdvances();
+        triggerAutoBackup('Advance updated');
         alert('✅ Advance updated!');
     }
 }
@@ -1503,6 +1704,7 @@ function deleteAdvance() {
     clearAdvanceForm();
     saveToStorage();
     loadAdvances();
+    triggerAutoBackup('Advance deleted');
     alert('✅ Advance deleted!');
 }
 
@@ -1704,7 +1906,332 @@ function getMonthName(m) {
 }
 
 // ============================================
-// EXCEL FUNCTIONS - AUTO UPLOAD
+// GOOGLE DRIVE FUNCTIONS
+// ============================================
+
+/**
+ * Load Google Drive API
+ */
+function loadDriveAuth() {
+    // Check if already authenticated
+    if (data.driveToken) {
+        document.getElementById('driveAuthSection').style.display = 'none';
+        document.getElementById('driveActions').style.display = 'block';
+        document.getElementById('driveStatus').textContent = '✅ Connected as: ' + (data.driveUser || 'User');
+        document.getElementById('driveStatus').className = 'drive-status show success';
+        return;
+    }
+    
+    // Load Google API libraries
+    if (!gapiLoaded) {
+        const script1 = document.createElement('script');
+        script1.src = 'https://apis.google.com/js/api.js';
+        script1.onload = () => {
+            gapi.load('client', initGapiClient);
+        };
+        document.head.appendChild(script1);
+        
+        const script2 = document.createElement('script');
+        script2.src = 'https://accounts.google.com/gsi/client';
+        script2.onload = () => {
+            // GSI loaded
+        };
+        document.head.appendChild(script2);
+        
+        gapiLoaded = true;
+    } else {
+        initGapiClient();
+    }
+}
+
+function initGapiClient() {
+    gapi.client.init({
+        apiKey: DRIVE_API_KEY,
+        clientId: DRIVE_CLIENT_ID,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        scope: DRIVE_SCOPES
+    }).then(() => {
+        console.log('Google Drive API initialized');
+    }).catch(err => {
+        console.error('Error initializing Google Drive API:', err);
+        showDriveStatus('Error loading Google Drive. Please check your client ID and API key.', 'error');
+    });
+}
+
+/**
+ * Authenticate with Google Drive
+ */
+function authenticateGoogleDrive() {
+    const status = document.getElementById('driveStatus');
+    status.textContent = '⏳ Connecting to Google Drive...';
+    status.className = 'drive-status show saving';
+    
+    try {
+        // Use OAuth2 token flow
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: DRIVE_CLIENT_ID,
+            scope: DRIVE_SCOPES,
+            callback: (tokenResponse) => {
+                if (tokenResponse.access_token) {
+                    data.driveToken = tokenResponse.access_token;
+                    // Get user info
+                    fetch('https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + tokenResponse.access_token)
+                        .then(res => res.json())
+                        .then(userInfo => {
+                            data.driveUser = userInfo.email || userInfo.name || 'User';
+                            saveToStorage();
+                            document.getElementById('driveAuthSection').style.display = 'none';
+                            document.getElementById('driveActions').style.display = 'block';
+                            showDriveStatus('✅ Connected as: ' + data.driveUser, 'success');
+                        })
+                        .catch(() => {
+                            data.driveUser = 'User';
+                            saveToStorage();
+                            document.getElementById('driveAuthSection').style.display = 'none';
+                            document.getElementById('driveActions').style.display = 'block';
+                            showDriveStatus('✅ Connected successfully!', 'success');
+                        });
+                } else {
+                    showDriveStatus('❌ Authentication failed. Please try again.', 'error');
+                }
+            },
+        });
+        tokenClient.requestAccessToken();
+    } catch(e) {
+        console.error('Auth error:', e);
+        showDriveStatus('❌ Error: ' + e.message + '. Please check your Google Cloud Console configuration.', 'error');
+    }
+}
+
+/**
+ * Sign out from Google Drive
+ */
+function signOutDrive() {
+    data.driveToken = null;
+    data.driveUser = null;
+    localStorage.removeItem('driveToken');
+    localStorage.removeItem('driveUser');
+    document.getElementById('driveAuthSection').style.display = 'block';
+    document.getElementById('driveActions').style.display = 'none';
+    document.getElementById('driveFileList').innerHTML = '<div class="text-muted text-center">Click "List Backups" to see files</div>';
+    showDriveStatus('👋 Signed out', 'info');
+    setTimeout(() => {
+        document.getElementById('driveStatus').className = 'drive-status';
+    }, 3000);
+}
+
+/**
+ * Show drive status message
+ */
+function showDriveStatus(message, type = 'info') {
+    const status = document.getElementById('driveStatus');
+    status.textContent = message;
+    status.className = 'drive-status show ' + type;
+}
+
+/**
+ * Backup data to Google Drive
+ */
+function backupToDrive() {
+    if (!data.driveToken) {
+        showDriveStatus('❌ Please sign in with Google Drive first', 'error');
+        return;
+    }
+    
+    showDriveStatus('⏳ Creating backup...', 'saving');
+    
+    try {
+        // Generate Excel file
+        const wb = XLSX.utils.book_new();
+        
+        // Workers sheet
+        const wData = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
+        data.workers.forEach(w => wData.push([w.id, w.name, w.department, w.mobile || '', w.hourlyRate, w.overtimeRate]));
+        const ws1 = XLSX.utils.aoa_to_sheet(wData);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Workers');
+        
+        // Attendance sheet
+        const aData = [['ID','Worker ID','Worker Name','Date','In','Out','Break Start','Break End','Break Hours','Net Hours','OT','Status','Salary']];
+        data.attendance.forEach(a => aData.push([a.id, a.workerId, a.workerName, a.date, a.checkIn, a.checkOut, a.breakStart||'', a.breakEnd||'', a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
+        const ws2 = XLSX.utils.aoa_to_sheet(aData);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
+        
+        // Advances sheet
+        const advData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
+        data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
+        const ws3 = XLSX.utils.aoa_to_sheet(advData);
+        XLSX.utils.book_append_sheet(wb, ws3, 'Advances');
+        
+        // Info sheet
+        const cData = [
+            ['Company Name', data.companyName],
+            ['Generated', new Date().toLocaleString()],
+            ['Total Workers', data.workers.length],
+            ['Total Attendance', data.attendance.length],
+            ['Total Advances', data.advances.length]
+        ];
+        const ws4 = XLSX.utils.aoa_to_sheet(cData);
+        XLSX.utils.book_append_sheet(wb, ws4, 'Info');
+        
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        
+        // Upload to Google Drive
+        const now = new Date();
+        const timestamp = now.getFullYear() + '-' + 
+                         String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(now.getDate()).padStart(2, '0') + '_' +
+                         String(now.getHours()).padStart(2, '0') + '-' +
+                         String(now.getMinutes()).padStart(2, '0') + '-' +
+                         String(now.getSeconds()).padStart(2, '0');
+        const filename = `${data.folderName}_${timestamp}.xlsx`;
+        
+        // Create file metadata
+        const metadata = {
+            name: filename,
+            parents: ['root'] // Save in root folder
+        };
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('file', blob);
+        
+        // Upload to Drive
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + data.driveToken,
+                'Content-Type': 'multipart/related; boundary=boundary'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                showDriveStatus('❌ Upload failed: ' + result.error.message, 'error');
+                if (result.error.message.includes('token')) {
+                    signOutDrive();
+                }
+                return;
+            }
+            data.lastBackupTime = Date.now();
+            saveToStorage();
+            updateLastBackupTime();
+            showDriveStatus('✅ Backup successful! File: ' + filename, 'success');
+            listDriveFiles();
+        })
+        .catch(err => {
+            console.error('Upload error:', err);
+            showDriveStatus('❌ Upload failed: ' + err.message, 'error');
+        });
+        
+    } catch(e) {
+        console.error('Backup error:', e);
+        showDriveStatus('❌ Backup failed: ' + e.message, 'error');
+    }
+}
+
+/**
+ * List files from Google Drive
+ */
+function listDriveFiles() {
+    if (!data.driveToken) {
+        showDriveStatus('❌ Please sign in with Google Drive first', 'error');
+        return;
+    }
+    
+    showDriveStatus('⏳ Loading files...', 'saving');
+    
+    fetch('https://www.googleapis.com/drive/v3/files?q=name+contains+"' + data.folderName + '"&orderBy=modifiedTime desc&pageSize=20', {
+        headers: {
+            'Authorization': 'Bearer ' + data.driveToken
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            showDriveStatus('❌ Error: ' + result.error.message, 'error');
+            if (result.error.message.includes('token')) {
+                signOutDrive();
+            }
+            return;
+        }
+        
+        const fileList = document.getElementById('driveFileList');
+        if (!result.files || result.files.length === 0) {
+            fileList.innerHTML = '<div class="text-muted text-center">No backup files found</div>';
+            showDriveStatus('📂 No backup files', 'info');
+            return;
+        }
+        
+        fileList.innerHTML = result.files.map(file => `
+            <div class="drive-file-item">
+                <span class="name" onclick="downloadDriveFile('${file.id}')">📄 ${file.name}</span>
+                <span class="date">${new Date(file.modifiedTime).toLocaleString()}</span>
+                <span style="font-size:11px;color:#6c757d;">${(file.size/1024).toFixed(1)} KB</span>
+            </div>
+        `).join('');
+        
+        showDriveStatus('📂 Found ' + result.files.length + ' backup files', 'success');
+    })
+    .catch(err => {
+        console.error('List error:', err);
+        showDriveStatus('❌ Error loading files: ' + err.message, 'error');
+    });
+}
+
+/**
+ * Download file from Google Drive
+ */
+function downloadDriveFile(fileId) {
+    if (!data.driveToken) {
+        alert('Please sign in first');
+        return;
+    }
+    
+    showDriveStatus('⏳ Downloading...', 'saving');
+    
+    fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+        headers: {
+            'Authorization': 'Bearer ' + data.driveToken
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+        showDriveStatus('✅ Download started', 'success');
+    })
+    .catch(err => {
+        console.error('Download error:', err);
+        showDriveStatus('❌ Download failed: ' + err.message, 'error');
+    });
+}
+
+/**
+ * Trigger auto backup when data changes
+ */
+function triggerAutoBackup(reason = 'Data changed') {
+    console.log(`🔄 Auto-backup triggered: ${reason}`);
+    if (data.driveToken) {
+        backupToDrive();
+    } else {
+        console.log('ℹ️ Not logged in to Google Drive, skipping backup');
+    }
+}
+
+// ============================================
+// EXCEL UPLOAD FUNCTIONS
 // ============================================
 function downloadExcel() {
     const wb = XLSX.utils.book_new();
@@ -1739,7 +2266,6 @@ function autoUploadExcel(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Show progress
     const progressDiv = document.getElementById('uploadProgress');
     progressDiv.classList.add('show');
     document.getElementById('uploadStatusText').textContent = 'Reading file...';
@@ -1758,12 +2284,10 @@ function autoUploadExcel(event) {
             let attendanceAdded = 0;
             let advancesAdded = 0;
             
-            // Get existing IDs to avoid duplicates
             const existingWorkerIds = new Set(data.workers.map(w => w.id));
             const existingAttIds = new Set(data.attendance.map(a => a.id));
             const existingAdvIds = new Set(data.advances.map(a => a.id));
             
-            // Read Workers
             const wsWorkers = workbook.Sheets['Workers'];
             if (wsWorkers) {
                 const rows = XLSX.utils.sheet_to_json(wsWorkers);
@@ -1783,7 +2307,6 @@ function autoUploadExcel(event) {
                 });
             }
             
-            // Read Attendance
             const wsAttendance = workbook.Sheets['Attendance'];
             if (wsAttendance) {
                 const rows = XLSX.utils.sheet_to_json(wsAttendance);
@@ -1811,7 +2334,6 @@ function autoUploadExcel(event) {
                 });
             }
             
-            // Read Advances
             const wsAdvances = workbook.Sheets['Advances'];
             if (wsAdvances) {
                 const rows = XLSX.utils.sheet_to_json(wsAdvances);
@@ -1831,28 +2353,26 @@ function autoUploadExcel(event) {
                 });
             }
             
-            // Save to storage
             saveToStorage();
             
-            // Update progress
             document.getElementById('uploadStatusText').textContent = '✅ Upload Complete!';
             document.getElementById('uploadPercent').textContent = '100%';
             document.getElementById('progressBar').style.width = '100%';
             
-            // Show success message
             let msg = '✅ Upload successful!<br>';
             msg += `📥 ${workersAdded} workers added<br>`;
             msg += `📋 ${attendanceAdded} attendance records added<br>`;
             msg += `💰 ${advancesAdded} advance records added`;
             document.getElementById('uploadMsg').innerHTML = `<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724;">${msg}</div>`;
             
-            // Refresh all data
             populateAllDropdowns();
             loadWorkers();
             loadAttendance();
             loadAdvances();
             
-            // Hide progress after 3 seconds
+            // Trigger auto backup
+            triggerAutoBackup('Excel uploaded');
+            
             setTimeout(() => {
                 document.getElementById('uploadProgress').classList.remove('show');
             }, 3000);
