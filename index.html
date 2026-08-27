@@ -441,7 +441,8 @@
             border: 1px solid #e9ecef;
             font-size: 13px;
         }
-        .folder-file-item .name { color: #6c5ce7; }
+        .folder-file-item .name { color: #6c5ce7; cursor: pointer; }
+        .folder-file-item .name:hover { text-decoration: underline; }
         .folder-file-item .date { color: #6c757d; font-size: 11px; }
         .folder-file-item .size { font-size: 11px; color: #6c757d; }
 
@@ -457,6 +458,20 @@
         }
         .select-folder-btn:hover {
             background: #5a4bd1;
+        }
+
+        .upload-excel-btn {
+            background: #0984e3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .upload-excel-btn:hover {
+            background: #0873c7;
         }
 
         @media (max-width: 992px) {
@@ -481,7 +496,7 @@
 
     <div class="company-name-input">
         <label>🏢 Company Name:</label>
-        <input type="text" id="companyName" placeholder="Enter your company name" value="My Company">
+        <input type="text" id="companyName" placeholder="Enter your company name" value="Sume-Tech">
         <button class="btn btn-primary" onclick="saveCompanyName()">Save</button>
     </div>
 
@@ -918,6 +933,9 @@
                     <button class="btn btn-info" onclick="listFolderFiles()" style="font-size:14px;padding:10px 20px;">
                         📂 View Files
                     </button>
+                    <button class="upload-excel-btn" onclick="document.getElementById('uploadInput').click()">
+                        📤 Upload Excel
+                    </button>
                 </div>
                 
                 <div style="background:#e8f5e9;padding:12px;border-radius:8px;border-left:4px solid #28a745;margin:10px 0;">
@@ -925,7 +943,7 @@
                     ✅ Workers Sheet - सभी Workers की List<br>
                     ✅ Attendance Sheet - सभी Attendance Records<br>
                     ✅ Advances Sheet - सभी Advance Records<br>
-                    ✅ Info Sheet - Company Info & Summary
+                    ✅ Summary Sheet - Company Info & Statistics
                 </div>
                 
                 <div id="folderStatus" class="folder-status">
@@ -941,13 +959,7 @@
                 </div>
             </div>
             
-            <!-- Upload Section -->
-            <div class="upload-area" onclick="document.getElementById('uploadInput').click()">
-                <div class="icon">📤</div>
-                <div class="text"><strong>Click to Upload Excel File</strong></div>
-                <div class="sub-text">Supports .xlsx and .xls files | Data will be auto-added</div>
-            </div>
-            <input type="file" id="uploadInput" accept=".xlsx,.xls" style="display:none;" onchange="autoUploadExcel(event)">
+            <input type="file" id="uploadInput" accept=".xlsx,.xls" style="display:none;" onchange="uploadExcelFile(event)">
             
             <div class="upload-progress" id="uploadProgress">
                 <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
@@ -992,7 +1004,7 @@
                     </div>
                 </div>
                 <div style="margin-top:8px;font-size:12px;color:#6c757d;">
-                    📌 <strong>सभी 4 Sheets एक ही Excel File में</strong> - Attendance_Data_YYYY-MM-DD.xlsx
+                    📌 <strong>सभी Sheets एक ही Excel File में</strong> - Attendance_Data_YYYY-MM-DD.xlsx
                 </div>
             </div>
         </div>
@@ -1012,13 +1024,14 @@ let data = {
     ],
     attendance: [],
     advances: [],
-    companyName: 'My Company',
+    companyName: 'Sume-Tech',
     nextWorkerId: 5,
     nextAttId: 1,
     nextAdvanceId: 1,
     lastSaveTime: null,
     folderHandle: null,
-    folderName: null
+    folderName: null,
+    currentFileName: 'Attendance_Data_2026-08-27_11-39-53.xlsx'
 };
 
 // ============================================
@@ -1044,7 +1057,9 @@ async function selectFolder() {
         localStorage.setItem('folderName', folderHandle.name);
         
         showFolderStatus('✅ Folder selected: ' + folderHandle.name, 'success');
-        setTimeout(() => saveAllData(), 500);
+        
+        // Try to find existing Excel file
+        await findExistingFile();
         
     } catch(err) {
         if (err.name === 'AbortError' || err.message.includes('abort')) {
@@ -1056,9 +1071,112 @@ async function selectFolder() {
     }
 }
 
+async function findExistingFile() {
+    try {
+        for await (const entry of data.folderHandle.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.xlsx') && entry.name.includes('Attendance_Data')) {
+                data.currentFileName = entry.name;
+                showFolderStatus('📂 Found existing file: ' + entry.name + '. New data will be added to this file.', 'info');
+                // Load data from existing file
+                await loadExcelFile(entry);
+                return;
+            }
+        }
+        showFolderStatus('📂 No existing file found. New file will be created.', 'info');
+    } catch(err) {
+        console.error('Error finding file:', err);
+    }
+}
+
+async function loadExcelFile(fileHandle) {
+    try {
+        const file = await fileHandle.getFile();
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Load Workers
+        const wsWorkers = workbook.Sheets['Workers'];
+        if (wsWorkers) {
+            const rows = XLSX.utils.sheet_to_json(wsWorkers);
+            data.workers = [];
+            rows.forEach(r => {
+                data.workers.push({
+                    id: r['ID'] || 0,
+                    name: r['Name'] || '',
+                    department: r['Department'] || '',
+                    mobile: r['Mobile'] || '',
+                    hourlyRate: r['Hourly Rate'] || 100,
+                    overtimeRate: r['OT Rate'] || 150
+                });
+            });
+            if (data.workers.length > 0) {
+                data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
+            }
+        }
+        
+        // Load Attendance
+        const wsAttendance = workbook.Sheets['Attendance'];
+        if (wsAttendance) {
+            const rows = XLSX.utils.sheet_to_json(wsAttendance);
+            data.attendance = [];
+            rows.forEach(r => {
+                data.attendance.push({
+                    id: r['ID'] || 0,
+                    workerId: r['Worker ID'] || 0,
+                    workerName: r['Worker Name'] || '',
+                    date: r['Date'] || '',
+                    checkIn: r['In'] || '',
+                    checkOut: r['Out'] || '',
+                    breakStart: r['Break Start'] || '',
+                    breakEnd: r['Break End'] || '',
+                    breakHours: r['Break Hours'] || 0,
+                    hours: r['Net Hours'] || 0,
+                    overtime: r['OT'] || 0,
+                    status: r['Status'] || 'Present',
+                    salary: r['Salary'] || 0
+                });
+            });
+            if (data.attendance.length > 0) {
+                data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
+            }
+        }
+        
+        // Load Advances
+        const wsAdvances = workbook.Sheets['Advances'];
+        if (wsAdvances) {
+            const rows = XLSX.utils.sheet_to_json(wsAdvances);
+            data.advances = [];
+            rows.forEach(r => {
+                data.advances.push({
+                    id: r['ID'] || 0,
+                    workerId: r['Worker ID'] || 0,
+                    workerName: r['Worker Name'] || '',
+                    date: r['Date'] || '',
+                    amount: r['Amount'] || 0,
+                    reason: r['Reason'] || ''
+                });
+            });
+            if (data.advances.length > 0) {
+                data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
+            }
+        }
+        
+        saveToStorage();
+        populateAllDropdowns();
+        loadWorkers();
+        loadAttendance();
+        loadAdvances();
+        
+        showFolderStatus('✅ Data loaded from existing file: ' + fileHandle.name, 'success');
+        
+    } catch(err) {
+        console.error('Error loading file:', err);
+        showFolderStatus('❌ Error loading file: ' + err.message, 'error');
+    }
+}
+
 /**
  * SAVE ALL DATA - Single Excel File with Multiple Sheets
- * This is the main function that saves everything in one file
  */
 async function saveAllData() {
     if (!data.folderHandle) {
@@ -1069,36 +1187,27 @@ async function saveAllData() {
     showFolderStatus('⏳ Creating single Excel file with all data...', 'saving');
     
     try {
-        // Create Excel workbook (single file)
         const wb = XLSX.utils.book_new();
         
-        // ============================================
         // SHEET 1: WORKERS
-        // ============================================
         const wData = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
         data.workers.forEach(w => wData.push([w.id, w.name, w.department, w.mobile || '', w.hourlyRate, w.overtimeRate]));
         const ws1 = XLSX.utils.aoa_to_sheet(wData);
         XLSX.utils.book_append_sheet(wb, ws1, 'Workers');
         
-        // ============================================
         // SHEET 2: ATTENDANCE
-        // ============================================
         const aData = [['ID','Worker ID','Worker Name','Date','In','Out','Break Start','Break End','Break Hours','Net Hours','OT','Status','Salary']];
         data.attendance.forEach(a => aData.push([a.id, a.workerId, a.workerName, a.date, a.checkIn, a.checkOut, a.breakStart||'', a.breakEnd||'', a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
         const ws2 = XLSX.utils.aoa_to_sheet(aData);
         XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
         
-        // ============================================
         // SHEET 3: ADVANCES
-        // ============================================
         const advData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
         data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
         const ws3 = XLSX.utils.aoa_to_sheet(advData);
         XLSX.utils.book_append_sheet(wb, ws3, 'Advances');
         
-        // ============================================
-        // SHEET 4: INFO / SUMMARY
-        // ============================================
+        // SHEET 4: SUMMARY
         const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
         const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
         const cData = [
@@ -1120,13 +1229,10 @@ async function saveAllData() {
         const ws4 = XLSX.utils.aoa_to_sheet(cData);
         XLSX.utils.book_append_sheet(wb, ws4, 'Summary');
         
-        // ============================================
         // Generate and Save File
-        // ============================================
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
         
-        // Create filename with timestamp
         const now = new Date();
         const timestamp = now.getFullYear() + '-' + 
                          String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -1136,27 +1242,24 @@ async function saveAllData() {
                          String(now.getSeconds()).padStart(2, '0');
         const filename = `Attendance_Data_${timestamp}.xlsx`;
         
-        // Save file to selected folder
         const fileHandle = await data.folderHandle.getFileHandle(filename, { create: true });
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
         await writable.close();
         
-        // Update status
+        data.currentFileName = filename;
         data.lastSaveTime = Date.now();
         saveToStorage();
         updateLastSaveTime();
         
-        // Show success with details
         showFolderStatus(
-            '✅ All data saved successfully in single file!<br>' +
+            '✅ All data saved successfully!<br>' +
             '📄 File: <strong>' + filename + '</strong><br>' +
             '📂 Location: <strong>' + data.folderName + '</strong><br>' +
             '📊 Sheets: Workers (' + data.workers.length + '), Attendance (' + data.attendance.length + '), Advances (' + data.advances.length + '), Summary',
             'success'
         );
         
-        // Refresh file list
         setTimeout(listFolderFiles, 1000);
         
     } catch(err) {
@@ -1166,14 +1269,111 @@ async function saveAllData() {
 }
 
 /**
- * Trigger auto save when data changes
+ * Upload Excel file and load data
  */
+async function uploadExcelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showFolderStatus('⏳ Reading Excel file...', 'saving');
+    
+    try {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const workbook = XLSX.read(e.target.result, { type: 'array' });
+                
+                // Load Workers
+                const wsWorkers = workbook.Sheets['Workers'];
+                if (wsWorkers) {
+                    const rows = XLSX.utils.sheet_to_json(wsWorkers);
+                    data.workers = [];
+                    rows.forEach(r => {
+                        data.workers.push({
+                            id: r['ID'] || 0,
+                            name: r['Name'] || '',
+                            department: r['Department'] || '',
+                            mobile: r['Mobile'] || '',
+                            hourlyRate: r['Hourly Rate'] || 100,
+                            overtimeRate: r['OT Rate'] || 150
+                        });
+                    });
+                    if (data.workers.length > 0) {
+                        data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
+                    }
+                }
+                
+                // Load Attendance
+                const wsAttendance = workbook.Sheets['Attendance'];
+                if (wsAttendance) {
+                    const rows = XLSX.utils.sheet_to_json(wsAttendance);
+                    data.attendance = [];
+                    rows.forEach(r => {
+                        data.attendance.push({
+                            id: r['ID'] || 0,
+                            workerId: r['Worker ID'] || 0,
+                            workerName: r['Worker Name'] || '',
+                            date: r['Date'] || '',
+                            checkIn: r['In'] || '',
+                            checkOut: r['Out'] || '',
+                            breakStart: r['Break Start'] || '',
+                            breakEnd: r['Break End'] || '',
+                            breakHours: r['Break Hours'] || 0,
+                            hours: r['Net Hours'] || 0,
+                            overtime: r['OT'] || 0,
+                            status: r['Status'] || 'Present',
+                            salary: r['Salary'] || 0
+                        });
+                    });
+                    if (data.attendance.length > 0) {
+                        data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
+                    }
+                }
+                
+                // Load Advances
+                const wsAdvances = workbook.Sheets['Advances'];
+                if (wsAdvances) {
+                    const rows = XLSX.utils.sheet_to_json(wsAdvances);
+                    data.advances = [];
+                    rows.forEach(r => {
+                        data.advances.push({
+                            id: r['ID'] || 0,
+                            workerId: r['Worker ID'] || 0,
+                            workerName: r['Worker Name'] || '',
+                            date: r['Date'] || '',
+                            amount: r['Amount'] || 0,
+                            reason: r['Reason'] || ''
+                        });
+                    });
+                    if (data.advances.length > 0) {
+                        data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
+                    }
+                }
+                
+                saveToStorage();
+                populateAllDropdowns();
+                loadWorkers();
+                loadAttendance();
+                loadAdvances();
+                
+                showFolderStatus('✅ Data loaded from uploaded file!', 'success');
+                document.getElementById('uploadMsg').innerHTML = '<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724;">✅ File uploaded and data loaded successfully!</div>';
+                
+            } catch(err) {
+                showFolderStatus('❌ Error reading file: ' + err.message, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        
+    } catch(err) {
+        showFolderStatus('❌ Error: ' + err.message, 'error');
+    }
+}
+
 function triggerAutoSave(reason = 'Data changed') {
     console.log('🔄 Auto-save triggered:', reason);
     if (data.folderHandle) {
         saveAllData();
-    } else {
-        showFolderStatus('ℹ️ Folder not selected. Click "Select Folder" first.', 'info');
     }
 }
 
@@ -1198,7 +1398,8 @@ async function listFolderFiles() {
                 entries.push({
                     name: entry.name,
                     size: file.size,
-                    time: file.lastModified
+                    time: file.lastModified,
+                    handle: entry
                 });
             }
         }
@@ -1213,7 +1414,7 @@ async function listFolderFiles() {
         
         fileList.innerHTML = entries.map(file => `
             <div class="folder-file-item">
-                <span class="name">📄 ${file.name}</span>
+                <span class="name" onclick="loadFileFromList('${file.name}')">📄 ${file.name}</span>
                 <span class="date">${new Date(file.time).toLocaleString()}</span>
                 <span class="size">${(file.size/1024).toFixed(1)} KB</span>
             </div>
@@ -1224,6 +1425,17 @@ async function listFolderFiles() {
     } catch(err) {
         console.error('List error:', err);
         showFolderStatus('❌ Error listing files: ' + err.message, 'error');
+    }
+}
+
+async function loadFileFromList(fileName) {
+    try {
+        const fileHandle = await data.folderHandle.getFileHandle(fileName);
+        await loadExcelFile(fileHandle);
+        data.currentFileName = fileName;
+        showFolderStatus('✅ Loaded: ' + fileName, 'success');
+    } catch(err) {
+        showFolderStatus('❌ Error loading file: ' + err.message, 'error');
     }
 }
 
@@ -1256,7 +1468,6 @@ function init() {
     if (folderName) {
         document.getElementById('folderPath').textContent = '📁 ' + folderName;
         document.getElementById('folderPath').style.color = '#0984e3';
-        showFolderStatus('ℹ️ Folder "' + folderName + '" was selected previously. Click "Select Folder" to re-select.', 'info');
     }
 }
 
@@ -2096,127 +2307,6 @@ function getMonthName(m) {
 // ============================================
 function downloadExcel() {
     saveAllData();
-}
-
-function autoUploadExcel(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const progressDiv = document.getElementById('uploadProgress');
-    progressDiv.classList.add('show');
-    document.getElementById('uploadStatusText').textContent = 'Reading file...';
-    document.getElementById('uploadPercent').textContent = '0%';
-    document.getElementById('progressBar').style.width = '0%';
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            document.getElementById('uploadStatusText').textContent = 'Processing data...';
-            document.getElementById('uploadPercent').textContent = '50%';
-            document.getElementById('progressBar').style.width = '50%';
-            
-            const workbook = XLSX.read(e.target.result, { type: 'array' });
-            let workersAdded = 0;
-            let attendanceAdded = 0;
-            let advancesAdded = 0;
-            
-            const existingWorkerIds = new Set(data.workers.map(w => w.id));
-            const existingAttIds = new Set(data.attendance.map(a => a.id));
-            const existingAdvIds = new Set(data.advances.map(a => a.id));
-            
-            const wsWorkers = workbook.Sheets['Workers'];
-            if (wsWorkers) {
-                const rows = XLSX.utils.sheet_to_json(wsWorkers);
-                rows.forEach(r => {
-                    const id = r['ID'] || 0;
-                    if (!existingWorkerIds.has(id)) {
-                        data.workers.push({
-                            id: data.nextWorkerId++,
-                            name: r['Name'] || '',
-                            department: r['Department'] || '',
-                            mobile: r['Mobile'] || '',
-                            hourlyRate: r['Hourly Rate'] || 100,
-                            overtimeRate: r['OT Rate'] || 150
-                        });
-                        workersAdded++;
-                    }
-                });
-            }
-            
-            const wsAttendance = workbook.Sheets['Attendance'];
-            if (wsAttendance) {
-                const rows = XLSX.utils.sheet_to_json(wsAttendance);
-                rows.forEach(r => {
-                    const id = r['ID'] || 0;
-                    if (!existingAttIds.has(id)) {
-                        const worker = data.workers.find(w => w.id == (r['Worker ID'] || 0));
-                        data.attendance.push({
-                            id: data.nextAttId++,
-                            workerId: r['Worker ID'] || 0,
-                            workerName: worker ? worker.name : (r['Worker Name'] || 'Unknown'),
-                            date: r['Date'] || '',
-                            checkIn: r['In'] || '',
-                            checkOut: r['Out'] || '',
-                            breakStart: r['Break Start'] || '',
-                            breakEnd: r['Break End'] || '',
-                            breakHours: r['Break Hours'] || 0,
-                            hours: r['Net Hours'] || 0,
-                            overtime: r['OT'] || 0,
-                            status: r['Status'] || 'Present',
-                            salary: r['Salary'] || 0
-                        });
-                        attendanceAdded++;
-                    }
-                });
-            }
-            
-            const wsAdvances = workbook.Sheets['Advances'];
-            if (wsAdvances) {
-                const rows = XLSX.utils.sheet_to_json(wsAdvances);
-                rows.forEach(r => {
-                    const id = r['ID'] || 0;
-                    if (!existingAdvIds.has(id)) {
-                        data.advances.push({
-                            id: data.nextAdvanceId++,
-                            workerId: r['Worker ID'] || 0,
-                            workerName: r['Worker Name'] || 'Unknown',
-                            date: r['Date'] || '',
-                            amount: r['Amount'] || 0,
-                            reason: r['Reason'] || ''
-                        });
-                        advancesAdded++;
-                    }
-                });
-            }
-            
-            saveToStorage();
-            
-            document.getElementById('uploadStatusText').textContent = '✅ Upload Complete!';
-            document.getElementById('uploadPercent').textContent = '100%';
-            document.getElementById('progressBar').style.width = '100%';
-            
-            let msg = '✅ Upload successful!<br>';
-            msg += `📥 ${workersAdded} workers added<br>`;
-            msg += `📋 ${attendanceAdded} attendance records added<br>`;
-            msg += `💰 ${advancesAdded} advance records added`;
-            document.getElementById('uploadMsg').innerHTML = `<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724;">${msg}</div>`;
-            
-            populateAllDropdowns();
-            loadWorkers();
-            loadAttendance();
-            loadAdvances();
-            triggerAutoSave('Excel uploaded');
-            
-            setTimeout(() => {
-                document.getElementById('uploadProgress').classList.remove('show');
-            }, 3000);
-            
-        } catch(err) {
-            document.getElementById('uploadMsg').innerHTML = `<div style="background:#f8d7da;padding:12px;border-radius:8px;color:#721c24;">❌ Error: ${err.message}</div>`;
-            document.getElementById('uploadProgress').classList.remove('show');
-        }
-    };
-    reader.readAsArrayBuffer(file);
 }
 
 function exportAttendanceOnly() {
