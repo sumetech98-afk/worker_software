@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance - Personal Folder</title>
+    <title>Attendance System - Single File</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -476,7 +476,7 @@
 <div class="container">
     <h1>
         <span>👷 Attendance System</span>
-        <span class="header-right">📁 Personal Folder</span>
+        <span class="header-right">📁 Single File</span>
     </h1>
 
     <div class="company-name-input">
@@ -499,7 +499,7 @@
             <div class="card">
                 <div class="card-title">📋 Attendance Records <span class="badge-excel">Excel</span></div>
                 <div class="excel-info">
-                    <span>📁 Data stored in Excel format</span>
+                    <span>📁 Data stored in single Excel file</span>
                     <span id="recordCount">0 records</span>
                 </div>
                 
@@ -891,7 +891,7 @@
     <div id="tab-folder" class="tab-content">
         <div class="card">
             <div class="card-title">
-                📁 Personal Folder
+                📁 Personal Folder - Single File
                 <span class="badge-folder">Auto Save</span>
             </div>
             
@@ -904,20 +904,28 @@
             <div class="folder-box">
                 <h4>📁 Select Your Personal Folder</h4>
                 <p>
-                    <strong>Pehle ek folder select karein</strong> - uske baad har data change par 
-                    <strong>auto-save</strong> usi folder mein ho jayega.
+                    <strong>Ek baar folder select karein</strong> - uske baad <strong>saara data (Workers + Attendance + Advances)</strong> 
+                    <strong>ek hi Excel file</strong> mein save hoga.
                 </p>
                 
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
                     <button class="select-folder-btn" onclick="selectFolder()">
                         📁 Select Folder
                     </button>
-                    <button class="btn btn-success" onclick="saveDataToFolder()" style="font-size:14px;padding:10px 20px;">
-                        💾 Save Now
+                    <button class="btn btn-success" onclick="saveAllData()" style="font-size:14px;padding:10px 20px;">
+                        💾 Save All Data
                     </button>
                     <button class="btn btn-info" onclick="listFolderFiles()" style="font-size:14px;padding:10px 20px;">
                         📂 View Files
                     </button>
+                </div>
+                
+                <div style="background:#e8f5e9;padding:12px;border-radius:8px;border-left:4px solid #28a745;margin:10px 0;">
+                    <strong>📌 एक ही File में सारा Data:</strong><br>
+                    ✅ Workers Sheet - सभी Workers की List<br>
+                    ✅ Attendance Sheet - सभी Attendance Records<br>
+                    ✅ Advances Sheet - सभी Advance Records<br>
+                    ✅ Info Sheet - Company Info & Summary
                 </div>
                 
                 <div id="folderStatus" class="folder-status">
@@ -968,7 +976,7 @@
             </div>
             
             <div style="margin-top:15px;padding:15px;background:#f8f9fa;border-radius:8px;">
-                <h4 style="margin-bottom:8px;">📋 Excel File Structure</h4>
+                <h4 style="margin-bottom:8px;">📋 Excel File Structure (Single File)</h4>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
                     <div style="background:white;padding:10px;border-radius:8px;border:1px solid #e9ecef;">
                         <strong>👥 Workers Sheet</strong><br>
@@ -982,6 +990,9 @@
                         <strong>💰 Advances Sheet</strong><br>
                         ID, Worker ID, Worker Name, Date, Amount, Reason
                     </div>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:#6c757d;">
+                    📌 <strong>सभी 4 Sheets एक ही Excel File में</strong> - Attendance_Data_YYYY-MM-DD.xlsx
                 </div>
             </div>
         </div>
@@ -1014,12 +1025,8 @@ let data = {
 // FOLDER SYSTEM - File System Access API
 // ============================================
 
-/**
- * Select a folder using File System Access API
- */
 async function selectFolder() {
     try {
-        // Check if browser supports File System Access API
         if (!('showDirectoryPicker' in window)) {
             showFolderStatus('❌ Your browser does not support File System Access API. Please use Chrome or Edge.', 'error');
             return;
@@ -1027,24 +1034,17 @@ async function selectFolder() {
 
         showFolderStatus('⏳ Opening folder picker...', 'saving');
         
-        // Open folder picker
         const folderHandle = await window.showDirectoryPicker();
-        
-        // Save folder handle
         data.folderHandle = folderHandle;
         data.folderName = folderHandle.name;
         
-        // Update display
         document.getElementById('folderPath').textContent = '📁 ' + folderHandle.name;
         document.getElementById('folderPath').style.color = '#0984e3';
         
-        // Save to localStorage (can't save handle, but save name)
         localStorage.setItem('folderName', folderHandle.name);
         
         showFolderStatus('✅ Folder selected: ' + folderHandle.name, 'success');
-        
-        // Auto-save after folder selection
-        setTimeout(() => saveDataToFolder(), 500);
+        setTimeout(() => saveAllData(), 500);
         
     } catch(err) {
         if (err.name === 'AbortError' || err.message.includes('abort')) {
@@ -1057,50 +1057,72 @@ async function selectFolder() {
 }
 
 /**
- * Save data to selected folder
+ * SAVE ALL DATA - Single Excel File with Multiple Sheets
+ * This is the main function that saves everything in one file
  */
-async function saveDataToFolder() {
+async function saveAllData() {
     if (!data.folderHandle) {
         showFolderStatus('⚠️ Please select a folder first! Click "Select Folder"', 'error');
         return;
     }
     
-    showFolderStatus('⏳ Creating Excel file...', 'saving');
+    showFolderStatus('⏳ Creating single Excel file with all data...', 'saving');
     
     try {
-        // Create Excel workbook
+        // Create Excel workbook (single file)
         const wb = XLSX.utils.book_new();
         
-        // Workers sheet
+        // ============================================
+        // SHEET 1: WORKERS
+        // ============================================
         const wData = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
         data.workers.forEach(w => wData.push([w.id, w.name, w.department, w.mobile || '', w.hourlyRate, w.overtimeRate]));
         const ws1 = XLSX.utils.aoa_to_sheet(wData);
         XLSX.utils.book_append_sheet(wb, ws1, 'Workers');
         
-        // Attendance sheet
+        // ============================================
+        // SHEET 2: ATTENDANCE
+        // ============================================
         const aData = [['ID','Worker ID','Worker Name','Date','In','Out','Break Start','Break End','Break Hours','Net Hours','OT','Status','Salary']];
         data.attendance.forEach(a => aData.push([a.id, a.workerId, a.workerName, a.date, a.checkIn, a.checkOut, a.breakStart||'', a.breakEnd||'', a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
         const ws2 = XLSX.utils.aoa_to_sheet(aData);
         XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
         
-        // Advances sheet
+        // ============================================
+        // SHEET 3: ADVANCES
+        // ============================================
         const advData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
         data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
         const ws3 = XLSX.utils.aoa_to_sheet(advData);
         XLSX.utils.book_append_sheet(wb, ws3, 'Advances');
         
-        // Info sheet
+        // ============================================
+        // SHEET 4: INFO / SUMMARY
+        // ============================================
+        const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
+        const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
         const cData = [
+            ['=== ATTENDANCE SYSTEM SUMMARY ==='],
+            [''],
             ['Company Name', data.companyName],
             ['Generated', new Date().toLocaleString()],
+            [''],
+            ['📊 STATISTICS'],
             ['Total Workers', data.workers.length],
-            ['Total Attendance', data.attendance.length],
-            ['Total Advances', data.advances.length]
+            ['Total Attendance Records', data.attendance.length],
+            ['Total Advances', data.advances.length],
+            ['Total Gross Salary', '₹' + totalSalary.toFixed(0)],
+            ['Total Advances Given', '₹' + totalAdvance.toFixed(0)],
+            ['Net Payable', '₹' + (totalSalary - totalAdvance).toFixed(0)],
+            [''],
+            ['=== END OF REPORT ===']
         ];
         const ws4 = XLSX.utils.aoa_to_sheet(cData);
-        XLSX.utils.book_append_sheet(wb, ws4, 'Info');
+        XLSX.utils.book_append_sheet(wb, ws4, 'Summary');
         
-        // Generate Excel file
+        // ============================================
+        // Generate and Save File
+        // ============================================
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
         
@@ -1125,10 +1147,12 @@ async function saveDataToFolder() {
         saveToStorage();
         updateLastSaveTime();
         
+        // Show success with details
         showFolderStatus(
-            '✅ File saved successfully!<br>' +
+            '✅ All data saved successfully in single file!<br>' +
             '📄 File: <strong>' + filename + '</strong><br>' +
-            '📂 Location: <strong>' + data.folderName + '</strong>',
+            '📂 Location: <strong>' + data.folderName + '</strong><br>' +
+            '📊 Sheets: Workers (' + data.workers.length + '), Attendance (' + data.attendance.length + '), Advances (' + data.advances.length + '), Summary',
             'success'
         );
         
@@ -1138,6 +1162,18 @@ async function saveDataToFolder() {
     } catch(err) {
         console.error('Save error:', err);
         showFolderStatus('❌ Error: ' + err.message, 'error');
+    }
+}
+
+/**
+ * Trigger auto save when data changes
+ */
+function triggerAutoSave(reason = 'Data changed') {
+    console.log('🔄 Auto-save triggered:', reason);
+    if (data.folderHandle) {
+        saveAllData();
+    } else {
+        showFolderStatus('ℹ️ Folder not selected. Click "Select Folder" first.', 'info');
     }
 }
 
@@ -1156,7 +1192,6 @@ async function listFolderFiles() {
         const entries = [];
         const fileList = document.getElementById('folderFileList');
         
-        // Get all entries from folder
         for await (const entry of data.folderHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.xlsx')) {
                 const file = await entry.getFile();
@@ -1168,7 +1203,6 @@ async function listFolderFiles() {
             }
         }
         
-        // Sort by time descending
         entries.sort((a, b) => b.time - a.time);
         
         if (entries.length === 0) {
@@ -1193,21 +1227,6 @@ async function listFolderFiles() {
     }
 }
 
-/**
- * Trigger auto save when data changes
- */
-function triggerAutoSave(reason = 'Data changed') {
-    console.log('🔄 Auto-save triggered:', reason);
-    if (data.folderHandle) {
-        saveDataToFolder();
-    } else {
-        showFolderStatus('ℹ️ Folder not selected. Click "Select Folder" first.', 'info');
-    }
-}
-
-/**
- * Show folder status message
- */
 function showFolderStatus(message, type = 'info') {
     const status = document.getElementById('folderStatus');
     status.innerHTML = message;
@@ -1233,7 +1252,6 @@ function init() {
     initDateFields();
     updateLastSaveTime();
     
-    // Check if folder name saved
     const folderName = localStorage.getItem('folderName');
     if (folderName) {
         document.getElementById('folderPath').textContent = '📁 ' + folderName;
@@ -2077,7 +2095,7 @@ function getMonthName(m) {
 // EXCEL FUNCTIONS
 // ============================================
 function downloadExcel() {
-    saveDataToFolder();
+    saveAllData();
 }
 
 function autoUploadExcel(event) {
