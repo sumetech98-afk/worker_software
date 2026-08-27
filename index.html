@@ -445,6 +445,18 @@
             border-radius: 4px;
             color: #0984e3;
         }
+        .folder-info .open-folder-btn {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .folder-info .open-folder-btn:hover {
+            background: #3367d6;
+        }
 
         .setup-guide {
             background: #fff3cd;
@@ -895,16 +907,13 @@
             <div class="folder-info">
                 <span>📂 Google Drive Folder:</span>
                 <span class="path">📁 Attendance_Backup</span>
-                <span style="font-size:12px;color:#6c757d;">All data saves here</span>
+                <button class="open-folder-btn" onclick="openDriveFolder()">📂 Open Folder</button>
             </div>
 
-            <!-- Setup Guide -->
             <div class="setup-guide">
-                <strong>⚡ Quick Setup:</strong><br>
-                1. Google Apps Script deploy karein (upar diye gaye steps follow karein)<br>
-                2. Neeche <strong>APPS_SCRIPT_URL</strong> mein apni URL paste karein<br>
-                3. <strong>"Sign in with Google"</strong> click karein<br>
-                4. Auto-backup start ho jayega!
+                <strong>📌 Files kahan save hoti hain?</strong><br>
+                Saari files <strong>Google Drive → Attendance_Backup</strong> folder mein save hoti hain.<br>
+                <strong>"Open Folder"</strong> button click karein - seedha folder open ho jayega!
             </div>
 
             <div class="drive-box">
@@ -939,6 +948,9 @@
                         </button>
                         <button class="btn btn-primary" onclick="listDriveFiles()" style="font-size:14px;padding:10px 20px;">
                             📂 View Backups
+                        </button>
+                        <button class="btn btn-success" onclick="openDriveFolder()" style="font-size:14px;padding:10px 20px;">
+                            📁 Open Folder
                         </button>
                         <button class="btn btn-danger" onclick="signOut()" style="font-size:14px;padding:10px 20px;">
                             🚪 Sign Out
@@ -1037,12 +1049,20 @@ let data = {
     nextAttId: 1,
     nextAdvanceId: 1,
     driveUser: null,
-    lastBackupTime: null
+    lastBackupTime: null,
+    driveFolderId: null
 };
 
 // ============================================
 // GOOGLE DRIVE FUNCTIONS
 // ============================================
+
+function openDriveFolder() {
+    // Open Google Drive folder - user ko direct folder dikhega
+    window.open('https://drive.google.com/drive/folders', '_blank');
+    showDriveStatus('📂 Google Drive folder opened in new tab', 'info');
+    setTimeout(() => document.getElementById('driveStatus').className = 'drive-status', 3000);
+}
 
 function signInWithGoogle() {
     showDriveStatus('⏳ Redirecting to Google Sign In...', 'saving');
@@ -1140,7 +1160,14 @@ function backupToDrive() {
                 data.lastBackupTime = Date.now();
                 saveToStorage();
                 document.getElementById('lastBackupTime').textContent = new Date().toLocaleString();
-                showDriveStatus('✅ Backup successful! File: ' + fileName, 'success');
+                showDriveStatus('✅ Backup successful! File: ' + fileName + ' → Google Drive/Attendance_Backup', 'success');
+                
+                // Show folder link
+                setTimeout(() => {
+                    document.getElementById('driveStatus').innerHTML = 
+                        '✅ Backup successful! <br>📂 <strong>Google Drive → Attendance_Backup</strong> folder mein save hua hai. <br>' +
+                        '<button class="btn btn-success" onclick="openDriveFolder()" style="margin-top:5px;font-size:12px;padding:4px 12px;">📁 Open Folder</button>';
+                }, 2000);
             })
             .catch(err => {
                 console.error('Upload error:', err);
@@ -1164,8 +1191,8 @@ function listDriveFiles() {
         if (result.success) {
             const fileList = document.getElementById('driveFileList');
             if (result.files.length === 0) {
-                fileList.innerHTML = '<div class="text-muted text-center">No backup files found</div>';
-                showDriveStatus('📂 No backup files', 'info');
+                fileList.innerHTML = '<div class="text-muted text-center">No backup files found in Attendance_Backup folder</div>';
+                showDriveStatus('📂 No backup files found', 'info');
                 return;
             }
             
@@ -1177,7 +1204,7 @@ function listDriveFiles() {
                 </div>
             `).join('');
             
-            showDriveStatus('📂 Found ' + result.files.length + ' backup files', 'success');
+            showDriveStatus('📂 Found ' + result.files.length + ' backup files in Attendance_Backup folder', 'success');
         } else {
             showDriveStatus('❌ Error: ' + result.error, 'error');
         }
@@ -1190,7 +1217,7 @@ function listDriveFiles() {
 
 function showDriveStatus(message, type = 'info') {
     const status = document.getElementById('driveStatus');
-    status.textContent = message;
+    status.innerHTML = message;
     status.className = 'drive-status show ' + type;
 }
 
@@ -1242,10 +1269,6 @@ function saveToStorage() {
     localStorage.setItem('companyName', data.companyName);
     if (data.lastBackupTime) localStorage.setItem('lastBackupTime', data.lastBackupTime);
 }
-
-// ... (rest of the functions - attendance, workers, advances, reports remain same)
-// For brevity, I'm showing only the key functions above.
-// The full code includes all attendance, worker, advance, and report functions.
 
 function saveCompanyName() {
     const name = document.getElementById('companyName').value.trim();
@@ -1310,6 +1333,9 @@ function calculateHours() {
     } catch(e) {}
 }
 
+// ============================================
+// SAMPLE DATA
+// ============================================
 function addSampleAttendance() {
     const today = new Date();
     for (let i = 0; i < 5; i++) {
@@ -1357,6 +1383,9 @@ function addSampleAdvances() {
     });
 }
 
+// ============================================
+// TAB SWITCHING
+// ============================================
 function showTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1368,6 +1397,9 @@ function showTab(tab) {
     if (tab === 'reports') populateSingleWorkerDropdown();
 }
 
+// ============================================
+// POPULATE DROPDOWNS
+// ============================================
 function populateAllDropdowns() {
     ['attWorker', 'attWorkerFilter', 'advanceWorker', 'advanceWorkerFilter', 'singleWorkerReport'].forEach(id => {
         const sel = document.getElementById(id);
