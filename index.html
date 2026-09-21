@@ -1013,23 +1013,20 @@
 
 <script>
 // ============================================
-// DATA
+// DATA - सभी खाली (कोई sample data नहीं)
 // ============================================
 let data = {
-    workers: [
-        ,
-       
-    ],
+    workers: [],
     attendance: [],
     advances: [],
     companyName: 'Sume-Tech',
-    nextWorkerId: 5,
+    nextWorkerId: 1,
     nextAttId: 1,
     nextAdvanceId: 1,
     lastSaveTime: null,
     folderHandle: null,
     folderName: null,
-    currentFileName: 'Attendance_Data_2026-08-27_11-39-53.xlsx'
+    currentFileName: ''
 };
 
 // ============================================
@@ -1474,8 +1471,17 @@ function loadFromStorage() {
         const saved = localStorage.getItem('attendanceData');
         if (saved) {
             const parsed = JSON.parse(saved);
-            if (parsed.workers && parsed.workers.length > 0) {
+            // Only load if there is actual data saved by user
+            if (parsed.workers || parsed.attendance || parsed.advances) {
                 data = parsed;
+                // Ensure arrays exist
+                if (!data.workers) data.workers = [];
+                if (!data.attendance) data.attendance = [];
+                if (!data.advances) data.advances = [];
+                // Ensure next IDs are set correctly
+                data.nextWorkerId = data.workers.length > 0 ? Math.max(...data.workers.map(w => w.id)) + 1 : 1;
+                data.nextAttId = data.attendance.length > 0 ? Math.max(...data.attendance.map(a => a.id)) + 1 : 1;
+                data.nextAdvanceId = data.advances.length > 0 ? Math.max(...data.advances.map(a => a.id)) + 1 : 1;
             }
         }
         const company = localStorage.getItem('companyName');
@@ -1487,10 +1493,11 @@ function loadFromStorage() {
         if (lastSave) {
             data.lastSaveTime = lastSave;
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error('Error loading from storage:', e);
+    }
     
-    if (data.attendance.length === 0) addSampleAttendance();
-    if (!data.advances || data.advances.length === 0) addSampleAdvances();
+    // No sample data added - only user data
     saveToStorage();
 }
 
@@ -1561,56 +1568,6 @@ function calculateHours() {
         document.getElementById('attOT').value = overtime.toFixed(1);
         document.getElementById('breakDeducted').value = breakHours > 0 ? breakHours.toFixed(1) + ' hrs deducted' : 'No break';
     } catch(e) {}
-}
-
-// ============================================
-// SAMPLE DATA
-// ============================================
-function addSampleAttendance() {
-    const today = new Date();
-    for (let i = 0; i < 5; i++) {
-        const d = new Date(today); d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
-        data.workers.forEach(w => {
-            const hours = 8 + Math.random() * 1.5;
-            const breakHrs = Math.random() > 0.3 ? 1 : 0.5;
-            const net = hours - breakHrs;
-            const ot = net > 8 ? net - 8 : 0;
-            data.attendance.push({
-                id: data.nextAttId++,
-                workerId: w.id,
-                workerName: w.name,
-                date: dateStr,
-                checkIn: '09:00',
-                checkOut: (18 + Math.floor(Math.random() * 2)).toString().padStart(2,'0') + ':00',
-                breakStart: '13:00',
-                breakEnd: '14:00',
-                breakHours: breakHrs,
-                hours: Math.round(net * 10) / 10,
-                overtime: Math.round(ot * 10) / 10,
-                status: ot > 0 ? 'Overtime' : 'Present',
-                salary: Math.round((net * w.hourlyRate) + (ot * w.overtimeRate))
-            });
-        });
-    }
-}
-
-function addSampleAdvances() {
-    const reasons = ['Emergency', 'Medical', 'Family Need', 'Festival', 'Personal'];
-    data.workers.forEach((w, idx) => {
-        for (let i = 0; i < 2; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() - (i * 3 + idx * 2));
-            data.advances.push({
-                id: data.nextAdvanceId++,
-                workerId: w.id,
-                workerName: w.name,
-                date: d.toISOString().split('T')[0],
-                amount: Math.round((100 + Math.random() * 900) / 100) * 100,
-                reason: reasons[Math.floor(Math.random() * reasons.length)]
-            });
-        }
-    });
 }
 
 // ============================================
