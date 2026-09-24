@@ -4,22 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance System - With WhatsApp</title>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System - With WhatsApp</title>
     
     <!-- ✅ ICON / FAVICON START -->
-    <!-- Browser Tab Icon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230984e3'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%91%B7%3C/text%3E%3C/svg%3E">
-    
-    <!-- Apple Touch Icon (iPhone/iPad Shortcut) -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230984e3'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%91%B7%3C/text%3E%3C/svg%3E">
-    
-    <!-- PWA Manifest (Android/Desktop Shortcut) -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Attendance%20System%22%2C%22short_name%22%3A%22Attendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230984e3%22%2C%22theme_color%22%3A%22%230984e3%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2527http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2527%2520viewBox%253D%25270%25200%2520100%2520100%2527%253E%253Crect%2520width%253D%2527100%2527%2520height%253D%2527100%2527%2520rx%253D%252720%2527%2520fill%253D%2527%25230984e3%2527%252F%253E%253Ctext%2520x%253D%252750%2527%2520y%253D%252768%2527%2520font-size%253D%252755%2527%2520text-anchor%253D%2527middle%2527%2520fill%253D%2527white%2527%2520font-family%253D%2527Arial%2527%253E%25F0%259F%2591%25B7%253C%252Ftext%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
-    
-    <!-- Theme Color -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Attendance%20System%22%2C%22short_name%22%3A%22Attendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230984e3%22%2C%22theme_color%22%3A%22%230984e3%22%7D">
     <meta name="theme-color" content="#0984e3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,9 +17,6 @@
     <meta name="description" content="Worker Attendance System with WhatsApp Integration">
     <!-- ✅ ICON / FAVICON END -->
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        /* ... baaki CSS same rahega ... */
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -199,7 +185,6 @@
         .btn-folder:hover { background: #5a4bd1; }
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
-        /* WhatsApp Button */
         .btn-whatsapp {
             background: #25D366;
             color: white;
@@ -527,7 +512,6 @@
             background: #0873c7;
         }
 
-        /* WhatsApp Modal */
         .whatsapp-modal {
             display: none;
             position: fixed;
@@ -1069,14 +1053,14 @@
             <div class="folder-info">
                 <span>📂 Folder Location:</span>
                 <span class="path" id="folderPath">🔴 Select folder first</span>
-                <span style="font-size:12px;color:#6c757d;">Click "Select Folder" to choose</span>
+                <span style="font-size:12px;color:#6c757d;">Auto-restores on reload</span>
             </div>
 
             <div class="folder-box">
                 <h4>📁 Select Your Personal Folder</h4>
                 <p>
                     <strong>Ek baar folder select karein</strong> - uske baad <strong>saara data (Workers + Attendance + Advances)</strong> 
-                    <strong>ek hi Excel file</strong> mein save hoga.
+                    <strong>ek hi Excel file</strong> mein save hoga. Folder <strong>automatically restore</strong> ho jayega next time.
                 </p>
                 
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -1205,7 +1189,7 @@
 
 <script>
 // ============================================
-// DATA - सभी खाली (कोई sample data नहीं)
+// DATA
 // ============================================
 let data = {
     workers: [],
@@ -1222,8 +1206,146 @@ let data = {
 };
 
 // ============================================
-// FOLDER SYSTEM - File System Access API
+// INDEXEDDB - Folder Handle Persistence
+// ✅ Ye folder ko permanently save karta hai
 // ============================================
+const DB_NAME = 'AttendanceSystemDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'handles';
+
+function openHandleDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
+
+async function saveFolderHandleToDB(handle) {
+    try {
+        const db = await openHandleDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(handle, 'folderHandle');
+        return new Promise((res, rej) => {
+            tx.oncomplete = () => res(true);
+            tx.onerror = () => rej(tx.error);
+        });
+    } catch (err) {
+        console.error('Save handle error:', err);
+    }
+}
+
+async function getFolderHandleFromDB() {
+    try {
+        const db = await openHandleDB();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get('folderHandle');
+        return new Promise((res, rej) => {
+            req.onsuccess = () => res(req.result || null);
+            req.onerror = () => rej(req.error);
+        });
+    } catch (err) {
+        console.error('Get handle error:', err);
+        return null;
+    }
+}
+
+async function clearFolderHandleFromDB() {
+    try {
+        const db = await openHandleDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete('folderHandle');
+    } catch (err) { console.error(err); }
+}
+
+// ============================================
+// FOLDER SYSTEM - Auto Restore
+// ============================================
+
+// ✅ Auto-restore folder on page load
+async function restoreFolder() {
+    try {
+        if (!('showDirectoryPicker' in window)) return false;
+        
+        const handle = await getFolderHandleFromDB();
+        if (!handle) {
+            console.log('No saved folder handle found');
+            return false;
+        }
+        
+        const permission = await handle.queryPermission({ mode: 'readwrite' });
+        console.log('📁 Folder permission status:', permission);
+        
+        if (permission === 'granted') {
+            // ✅ Auto restore - no click needed
+            data.folderHandle = handle;
+            data.folderName = handle.name;
+            document.getElementById('folderPath').textContent = '📁 ' + handle.name + ' ✅ Auto-restored';
+            document.getElementById('folderPath').style.color = '#00b894';
+            showFolderStatus('✅ Folder auto-restored: <strong>' + handle.name + '</strong><br>Ab data automatic save hoga!', 'success');
+            await findExistingFile();
+            console.log('✅ Folder auto-restored successfully');
+            return true;
+        } else if (permission === 'prompt') {
+            // One click needed
+            data.folderHandle = handle;
+            data.folderName = handle.name;
+            document.getElementById('folderPath').textContent = '📁 ' + handle.name + ' (click Restore)';
+            document.getElementById('folderPath').style.color = '#e17055';
+            showRestoreButton(handle);
+            showFolderStatus('⚠️ Folder "' + handle.name + '" mila! Click <strong>"🔄 Restore Access"</strong> button to enable auto-save.', 'info');
+            return false;
+        } else {
+            await clearFolderHandleFromDB();
+            showFolderStatus('ℹ️ Previous folder permission denied. Please select folder again.', 'info');
+            return false;
+        }
+    } catch (err) {
+        console.error('Restore folder error:', err);
+        return false;
+    }
+}
+
+function showRestoreButton(handle) {
+    const pathEl = document.getElementById('folderPath');
+    const parent = pathEl.parentElement;
+    
+    const oldBtn = document.getElementById('restoreFolderBtn');
+    if (oldBtn) oldBtn.remove();
+    
+    const btn = document.createElement('button');
+    btn.id = 'restoreFolderBtn';
+    btn.className = 'btn btn-warning';
+    btn.style.cssText = 'font-size:12px;padding:6px 12px;margin-left:8px;';
+    btn.textContent = '🔄 Restore Access';
+    btn.onclick = async () => {
+        try {
+            const perm = await handle.requestPermission({ mode: 'readwrite' });
+            if (perm === 'granted') {
+                data.folderHandle = handle;
+                data.folderName = handle.name;
+                document.getElementById('folderPath').textContent = '📁 ' + handle.name + ' ✅ Restored';
+                document.getElementById('folderPath').style.color = '#00b894';
+                btn.remove();
+                showFolderStatus('✅ Folder restored! Ab automatic save hoga.', 'success');
+                await findExistingFile();
+            } else {
+                showFolderStatus('❌ Permission denied. Please select folder again.', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showFolderStatus('❌ Error: ' + err.message, 'error');
+        }
+    };
+    
+    parent.appendChild(btn);
+}
 
 async function selectFolder() {
     try {
@@ -1238,12 +1360,17 @@ async function selectFolder() {
         data.folderHandle = folderHandle;
         data.folderName = folderHandle.name;
         
-        document.getElementById('folderPath').textContent = '📁 ' + folderHandle.name;
-        document.getElementById('folderPath').style.color = '#0984e3';
+        // ✅ Save handle to IndexedDB permanently
+        await saveFolderHandleToDB(folderHandle);
         
+        document.getElementById('folderPath').textContent = '📁 ' + folderHandle.name + ' ✅ Saved';
+        document.getElementById('folderPath').style.color = '#00b894';
         localStorage.setItem('folderName', folderHandle.name);
         
-        showFolderStatus('✅ Folder selected: ' + folderHandle.name, 'success');
+        const oldBtn = document.getElementById('restoreFolderBtn');
+        if (oldBtn) oldBtn.remove();
+        
+        showFolderStatus('✅ Folder selected: <strong>' + folderHandle.name + '</strong><br>Ye ab permanently save ho gaya hai. Next time automatic restore hoga.', 'success');
         
         await findExistingFile();
         
@@ -1361,6 +1488,20 @@ async function saveAllData() {
     if (!data.folderHandle) {
         showFolderStatus('⚠️ Please select a folder first! Click "Select Folder"', 'error');
         return;
+    }
+    
+    // ✅ Verify permission before saving
+    try {
+        const perm = await data.folderHandle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') {
+            const req = await data.folderHandle.requestPermission({ mode: 'readwrite' });
+            if (req !== 'granted') {
+                showFolderStatus('❌ Folder permission denied. Please select folder again.', 'error');
+                return;
+            }
+        }
+    } catch (err) {
+        console.error('Permission check error:', err);
     }
     
     showFolderStatus('⏳ Creating single Excel file with all data...', 'saving');
@@ -1873,8 +2014,8 @@ function init() {
     
     const folderName = localStorage.getItem('folderName');
     if (folderName) {
-        document.getElementById('folderPath').textContent = '📁 ' + folderName;
-        document.getElementById('folderPath').style.color = '#0984e3';
+        document.getElementById('folderPath').textContent = '📁 ' + folderName + ' (restoring...)';
+        document.getElementById('folderPath').style.color = '#6c757d';
     }
     
     // WhatsApp modal setup
@@ -1891,6 +2032,11 @@ function init() {
             if (e.target === this) closeWhatsAppModal();
         });
     }
+    
+    // ✅ AUTO RESTORE FOLDER
+    setTimeout(() => {
+        restoreFolder();
+    }, 300);
 }
 
 function loadFromStorage() {
