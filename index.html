@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System - With WhatsApp</title>
+    <title>Attendance System - With WhatsApp PDF</title>
     
-    <!-- ✅ ICON / FAVICON START -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230984e3'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%91%B7%3C/text%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230984e3'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%91%B7%3C/text%3E%3C/svg%3E">
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Attendance%20System%22%2C%22short_name%22%3A%22Attendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230984e3%22%2C%22theme_color%22%3A%22%230984e3%22%7D">
     <meta name="theme-color" content="#0984e3">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Attendance">
-    <meta name="application-name" content="Attendance System">
-    <meta name="description" content="Worker Attendance System with WhatsApp Integration">
-    <!-- ✅ ICON / FAVICON END -->
     
+    <!-- ✅ XLSX Library (Excel) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- ✅ jsPDF Library (PDF Generation) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- ✅ jsPDF AutoTable (for tables in PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -55,40 +53,20 @@
             margin-bottom: 15px;
             flex-wrap: wrap;
         }
-        .company-name-input label {
-            font-weight: 600;
-            color: #0984e3;
-        }
+        .company-name-input label { font-weight: 600; color: #0984e3; }
         .company-name-input input {
-            padding: 6px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 6px;
-            font-size: 14px;
-            flex: 1;
-            min-width: 200px;
+            padding: 6px 12px; border: 2px solid #e9ecef;
+            border-radius: 6px; font-size: 14px; flex: 1; min-width: 200px;
         }
-        .company-name-input input:focus {
-            outline: none;
-            border-color: #0984e3;
-        }
+        .company-name-input input:focus { outline: none; border-color: #0984e3; }
         .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 10px;
-            flex-wrap: wrap;
+            display: flex; gap: 10px; margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef; padding-bottom: 10px; flex-wrap: wrap;
         }
         .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 15px;
-            font-weight: 500;
-            color: #6c757d;
-            border-radius: 8px;
-            transition: all 0.3s;
+            padding: 10px 20px; cursor: pointer; border: none; background: none;
+            font-size: 15px; font-weight: 500; color: #6c757d;
+            border-radius: 8px; transition: all 0.3s;
         }
         .tab:hover { background: #f1f3f5; }
         .tab.active { background: #0984e3; color: white; }
@@ -98,74 +76,46 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        .row {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-top: 15px;
-        }
+        .row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 15px; }
         .card {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
+            background: white; border: 1px solid #e9ecef;
+            border-radius: 10px; padding: 15px;
         }
         .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2d3436;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            font-size: 16px; font-weight: 600; color: #2d3436;
+            margin-bottom: 12px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap;
         }
         .badge-excel { background: #28a745; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-edit { background: #fdcb6e; color: #2d3436; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-advance { background: #e17055; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-folder { background: #6c5ce7; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-wa { background: #25D366; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+        .badge-pdf { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label {
-            display: block;
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 4px;
-            font-size: 13px;
+            display: block; font-weight: 500; color: #495057;
+            margin-bottom: 4px; font-size: 13px;
         }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 8px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 13px;
-            background: white;
+            width: 100%; padding: 8px 12px; border: 2px solid #e9ecef;
+            border-radius: 8px; font-size: 13px; background: white;
         }
         .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #0984e3;
+            outline: none; border-color: #0984e3;
             box-shadow: 0 0 0 3px rgba(9,132,227,0.1);
         }
         .form-group input:disabled, .form-group input[readonly] {
-            background: #f8f9fa;
-            cursor: not-allowed;
+            background: #f8f9fa; cursor: not-allowed;
         }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
+            padding: 8px 16px; border: none; border-radius: 8px;
+            font-weight: 500; cursor: pointer; font-size: 13px;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px;
         }
         .btn-primary { background: #0984e3; color: white; }
         .btn-primary:hover { background: #0873c7; }
@@ -183,301 +133,124 @@
         .btn-advance:hover { background: #d63031; }
         .btn-folder { background: #6c5ce7; color: white; }
         .btn-folder:hover { background: #5a4bd1; }
+        .btn-pdf { background: #e74c3c; color: white; }
+        .btn-pdf:hover { background: #c0392b; }
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
         .btn-whatsapp {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            background: #25D366; color: white; border: none;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            font-size: 12px; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 4px;
             transition: all 0.3s;
         }
-        .btn-whatsapp:hover {
-            background: #1da851;
-            transform: scale(1.05);
-        }
-        .btn-whatsapp:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn-whatsapp:hover { background: #1da851; transform: scale(1.05); }
+        .btn-whatsapp:disabled { background: #ccc; cursor: not-allowed; transform: none; }
 
-        .table-container {
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
+        .table-container { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
         table thead { position: sticky; top: 0; z-index: 10; }
         table th {
-            background: #2d3436;
-            color: white;
-            padding: 10px 12px;
-            text-align: left;
-            white-space: nowrap;
+            background: #2d3436; color: white;
+            padding: 10px 12px; text-align: left; white-space: nowrap;
         }
-        table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #f1f3f5;
-        }
+        table td { padding: 8px 12px; border-bottom: 1px solid #f1f3f5; }
         table tr:hover { background: #f8f9fa; cursor: pointer; }
         table tr.selected { background: #e3f2fd; border-left: 3px solid #0984e3; }
 
-        .badge {
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            display: inline-block;
-        }
+        .badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; display: inline-block; }
         .badge-present { background: #d4edda; color: #155724; }
         .badge-absent { background: #f8d7da; color: #721c24; }
         .badge-overtime { background: #fff3cd; color: #856404; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0; }
-        .stats-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 10px 0; }
         .stats-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 10px 0; }
-        .stat-card {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
+        .stat-card { background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center; }
         .stat-card .num { font-size: 24px; font-weight: 700; color: #0984e3; }
         .stat-card .label { font-size: 12px; color: #6c757d; }
         .stat-card .num-danger { color: #e17055; }
         .stat-card .num-success { color: #00b894; }
 
         .excel-info {
-            background: #e8f5e9;
-            padding: 8px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #28a745;
-            margin-bottom: 12px;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            background: #e8f5e9; padding: 8px 15px; border-radius: 8px;
+            border-left: 4px solid #28a745; margin-bottom: 12px;
+            font-size: 13px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap;
         }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 8px 0;
-        }
-        .checkbox-group input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         .mt-10 { margin-top: 10px; }
         .mt-20 { margin-top: 20px; }
         .text-center { text-align: center; }
         .text-muted { color: #6c757d; }
 
         .report-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 500px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            margin-top: 10px;
+            background: #f8f9fa; padding: 15px; border-radius: 8px;
+            font-family: 'Courier New', monospace; font-size: 12px;
+            max-height: 500px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
         }
 
         .worker-select-card {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            background: #f8f9fa; padding: 10px 15px; border-radius: 8px;
+            margin-bottom: 10px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 10px;
         }
         .worker-select-card select {
-            padding: 8px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 13px;
-            min-width: 200px;
-            background: white;
+            padding: 8px 12px; border: 2px solid #e9ecef;
+            border-radius: 8px; font-size: 13px; min-width: 200px; background: white;
         }
 
-        .report-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 10px 0;
-        }
+        .report-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0; }
         .report-option-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s;
+            background: #f8f9fa; padding: 15px; border-radius: 10px;
+            border: 2px solid #e9ecef; transition: all 0.3s;
         }
-        .report-option-card:hover {
-            border-color: #0984e3;
-            box-shadow: 0 5px 15px rgba(9,132,227,0.1);
-        }
+        .report-option-card:hover { border-color: #0984e3; box-shadow: 0 5px 15px rgba(9,132,227,0.1); }
         .report-option-card .title { font-weight: 600; font-size: 14px; color: #2d3436; }
         .report-option-card .desc { font-size: 12px; color: #6c757d; margin: 5px 0 10px 0; }
 
         .edit-hint {
-            background: #fff3cd;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #856404;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            background: #fff3cd; padding: 8px 12px; border-radius: 6px;
+            font-size: 12px; color: #856404; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
         }
         .break-section {
-            background: #f0f7ff;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #b8d4f0;
-            margin: 8px 0;
+            background: #f0f7ff; padding: 10px 12px; border-radius: 8px;
+            border: 1px solid #b8d4f0; margin: 8px 0;
         }
         .break-section .title { font-weight: 600; font-size: 13px; color: #0984e3; margin-bottom: 5px; }
 
-        .upload-area {
-            border: 2px dashed #dee2e6;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            transition: all 0.3s;
-            cursor: pointer;
-            background: #f8f9fa;
-        }
-        .upload-area:hover {
-            border-color: #0984e3;
-            background: #f0f7ff;
-        }
-        .upload-area .icon { font-size: 48px; color: #6c757d; }
-        .upload-area .text { margin-top: 10px; color: #6c757d; }
-        .upload-area .sub-text { font-size: 12px; color: #adb5bd; }
-
-        .upload-progress {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            background: #e3f2fd;
-            display: none;
-        }
-        .upload-progress.show { display: block; }
-        .upload-progress .bar {
-            height: 8px;
-            background: #0984e3;
-            border-radius: 4px;
-            transition: width 0.5s;
-            width: 0%;
-        }
-
         .folder-box {
-            background: #f3f0ff;
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid #6c5ce7;
-            margin-top: 15px;
+            background: #f3f0ff; padding: 20px; border-radius: 12px;
+            border: 2px solid #6c5ce7; margin-top: 15px;
         }
-        .folder-box h4 {
-            color: #4a2c8a;
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
-        .folder-box p {
-            font-size: 14px;
-            color: #4a2c8a;
-            margin-bottom: 15px;
-        }
+        .folder-box h4 { color: #4a2c8a; margin-bottom: 8px; font-size: 18px; }
+        .folder-box p { font-size: 14px; color: #4a2c8a; margin-bottom: 15px; }
         .folder-status {
-            display: none;
-            margin-top: 10px;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 14px;
+            display: none; margin-top: 10px; padding: 12px;
+            border-radius: 8px; font-weight: 500; font-size: 14px;
         }
-        .folder-status.show {
-            display: block;
-            animation: fade 0.3s;
-        }
-        .folder-status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .folder-status.saving {
-            background: #cce5ff;
-            color: #004085;
-            border: 1px solid #b8daff;
-        }
-        .folder-status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .folder-status.info {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffc107;
-        }
+        .folder-status.show { display: block; animation: fade 0.3s; }
+        .folder-status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .folder-status.saving { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .folder-status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .folder-status.info { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
 
         .folder-info {
-            background: #e3f2fd;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border-left: 4px solid #0984e3;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            background: #e3f2fd; padding: 10px 15px; border-radius: 8px;
+            margin: 10px 0; border-left: 4px solid #0984e3;
+            font-size: 13px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap;
         }
         .folder-info .path {
-            font-family: monospace;
-            font-size: 12px;
-            background: white;
-            padding: 4px 10px;
-            border-radius: 4px;
-            color: #0984e3;
+            font-family: monospace; font-size: 12px; background: white;
+            padding: 4px 10px; border-radius: 4px; color: #0984e3;
         }
 
-        .folder-file-list {
-            margin: 10px 0;
-            max-height: 250px;
-            overflow-y: auto;
-        }
+        .folder-file-list { margin: 10px 0; max-height: 250px; overflow-y: auto; }
         .folder-file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: white;
-            border-radius: 6px;
-            margin: 4px 0;
-            border: 1px solid #e9ecef;
-            font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: white; border-radius: 6px;
+            margin: 4px 0; border: 1px solid #e9ecef; font-size: 13px;
         }
         .folder-file-item .name { color: #6c5ce7; cursor: pointer; }
         .folder-file-item .name:hover { text-decoration: underline; }
@@ -485,122 +258,77 @@
         .folder-file-item .size { font-size: 11px; color: #6c757d; }
 
         .select-folder-btn {
-            background: #6c5ce7;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
+            background: #6c5ce7; color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-size: 14px; font-weight: 500;
         }
-        .select-folder-btn:hover {
-            background: #5a4bd1;
-        }
+        .select-folder-btn:hover { background: #5a4bd1; }
 
         .upload-excel-btn {
-            background: #0984e3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
+            background: #0984e3; color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-size: 14px; font-weight: 500;
         }
-        .upload-excel-btn:hover {
-            background: #0873c7;
-        }
+        .upload-excel-btn:hover { background: #0873c7; }
 
+        /* WhatsApp Modal */
         .whatsapp-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 9999;
+            justify-content: center; align-items: center; padding: 15px;
         }
-        .whatsapp-modal.show {
-            display: flex;
-        }
+        .whatsapp-modal.show { display: flex; }
         .whatsapp-modal-content {
-            background: white;
-            border-radius: 15px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
+            background: white; border-radius: 15px; max-width: 650px; width: 100%;
+            max-height: 90vh; overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         .whatsapp-modal-header {
-            background: #25D366;
-            color: white;
-            padding: 15px 20px;
+            background: #25D366; color: white; padding: 15px 20px;
             border-radius: 15px 15px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .whatsapp-modal-header h3 {
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .whatsapp-modal-header h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
         .whatsapp-modal-header .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            line-height: 1;
+            background: none; border: none; color: white;
+            font-size: 24px; cursor: pointer; line-height: 1;
         }
-        .whatsapp-modal-body {
-            padding: 20px;
-        }
-        .whatsapp-modal-body .form-group {
-            margin-bottom: 15px;
-        }
+        .whatsapp-modal-body { padding: 20px; }
+        .whatsapp-modal-body .form-group { margin-bottom: 15px; }
         .whatsapp-modal-body textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 200px;
+            width: 100%; padding: 10px 12px; border: 2px solid #e9ecef;
+            border-radius: 8px; font-size: 13px; font-family: inherit;
+            resize: vertical; min-height: 150px;
         }
-        .whatsapp-modal-body textarea:focus {
-            outline: none;
-            border-color: #25D366;
-        }
+        .whatsapp-modal-body textarea:focus { outline: none; border-color: #25D366; }
         .whatsapp-preview {
-            background: #f0f2f5;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 13px;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-            border-left: 4px solid #25D366;
-            font-family: 'Courier New', monospace;
-            margin-bottom: 15px;
+            background: #f0f2f5; padding: 15px; border-radius: 8px;
+            font-size: 13px; white-space: pre-wrap; max-height: 250px;
+            overflow-y: auto; border-left: 4px solid #25D366;
+            font-family: 'Courier New', monospace; margin-bottom: 15px;
         }
         .whatsapp-modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #e9ecef;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
+            padding: 15px 20px; border-top: 1px solid #e9ecef;
+            display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+        }
+
+        /* PDF Options */
+        .pdf-options {
+            background: #fff5f5; padding: 12px; border-radius: 8px;
+            border-left: 4px solid #e74c3c; margin: 10px 0;
+        }
+        .pdf-options .title { font-weight: 600; color: #c0392b; font-size: 14px; margin-bottom: 8px; }
+        .pdf-options .desc { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
+
+        .pdf-info-box {
+            background: #e8f4fd; padding: 12px; border-radius: 8px;
+            border-left: 4px solid #0984e3; margin: 10px 0;
+            font-size: 13px; color: #2c3e50;
         }
 
         @media (max-width: 992px) {
             .row { grid-template-columns: 1fr; }
-            .stats-grid, .stats-grid-5, .stats-grid-6 { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid-6 { grid-template-columns: repeat(2, 1fr); }
             .report-options { grid-template-columns: 1fr; }
             .form-row-3 { grid-template-columns: 1fr 1fr; }
         }
@@ -615,7 +343,7 @@
 <div class="container">
     <h1>
         <span>👷 Attendance System</span>
-        <span class="header-right">📁 Single File | 📱 WhatsApp Enabled</span>
+        <span class="header-right">📁 Single File | 📱 WhatsApp PDF Enabled</span>
     </h1>
 
     <div class="company-name-input">
@@ -677,18 +405,9 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Date</th>
-                                <th>Worker</th>
-                                <th>Department</th>
-                                <th>Mobile</th>
-                                <th>In</th>
-                                <th>Out</th>
-                                <th>Hours</th>
-                                <th>OT</th>
-                                <th>Break</th>
-                                <th>Status</th>
-                                <th>Salary</th>
+                                <th>#</th><th>Date</th><th>Worker</th><th>Department</th>
+                                <th>Mobile</th><th>In</th><th>Out</th><th>Hours</th>
+                                <th>OT</th><th>Break</th><th>Status</th><th>Salary</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTable">
@@ -787,7 +506,7 @@
                 <div class="card mt-20">
                     <div class="card-title">
                         📈 Worker Summary
-                        <button class="btn btn-whatsapp" onclick="sendCurrentWorkerSummaryWhatsApp()" style="font-size:11px;padding:4px 10px;">📱 WhatsApp</button>
+                        <button class="btn btn-whatsapp" onclick="sendCurrentWorkerSummaryWhatsApp()" style="font-size:11px;padding:4px 10px;">📱 WhatsApp PDF</button>
                     </div>
                     <div id="summaryBox">
                         <div class="text-muted text-center">Select a worker from dropdown or table</div>
@@ -801,23 +520,17 @@
     <div id="tab-workers" class="tab-content">
         <div class="row">
             <div class="card">
-                <div class="card-title">👥 All Workers <span class="badge-excel">Excel</span> <span class="badge-wa">WhatsApp</span></div>
+                <div class="card-title">👥 All Workers <span class="badge-excel">Excel</span> <span class="badge-wa">WhatsApp PDF</span></div>
                 <div class="excel-info">
                     <span>Total: <span id="totalWorkers">0</span> workers</span>
-                    <span style="font-size:12px;color:#6c757d;">💡 Click on any row to edit | 📱 Send button for WhatsApp</span>
+                    <span style="font-size:12px;color:#6c757d;">💡 Click on any row to edit | 📱 Send PDF button for WhatsApp</span>
                 </div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th>Mobile</th>
-                                <th>Hourly Rate</th>
-                                <th>OT Rate</th>
-                                <th>Action</th>
-                                <th>WhatsApp</th>
+                                <th>ID</th><th>Name</th><th>Department</th><th>Mobile</th>
+                                <th>Hourly Rate</th><th>OT Rate</th><th>Action</th><th>WhatsApp PDF</th>
                             </tr>
                         </thead>
                         <tbody id="workerTable">
@@ -949,7 +662,7 @@
     <!-- TAB 4: REPORTS -->
     <div id="tab-reports" class="tab-content">
         <div class="card">
-            <div class="card-title">📊 Monthly Reports <span class="badge-advance">With Advances</span> <span class="badge-wa">WhatsApp</span></div>
+            <div class="card-title">📊 Monthly Reports <span class="badge-advance">With Advances</span> <span class="badge-wa">WhatsApp</span> <span class="badge-pdf">PDF</span></div>
             
             <div class="report-options">
                 <div class="report-option-card" style="border-color: #0984e3; background: #f0f7ff;">
@@ -985,10 +698,10 @@
                             <label>Year</label>
                             <select id="singleReportYear" style="width:100%;padding:8px 12px;border:2px solid #e9ecef;border-radius:8px;"></select>
                         </div>
-                        <div class="form-group" style="display:flex;align-items:flex-end;gap:5px;">
-                            <button class="btn btn-primary" onclick="generateSingleReport()" style="width:100%;">📄 Generate</button>
-                            <button class="btn btn-excel" onclick="exportSingleReport()" style="width:100%;">📥 Export</button>
-                            <button class="btn btn-whatsapp" onclick="sendSingleReportWhatsApp()" style="width:100%;padding:8px 12px;">📱 WhatsApp</button>
+                        <div class="form-group" style="display:flex;align-items:flex-end;gap:5px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="generateSingleReport()" style="flex:1;">📄 Generate</button>
+                            <button class="btn btn-pdf" onclick="downloadSingleReportPDF()" style="flex:1;">📥 PDF</button>
+                            <button class="btn btn-whatsapp" onclick="sendSingleReportPDFWhatsApp()" style="flex:1;padding:8px 12px;">📱 PDF on WA</button>
                         </div>
                     </div>
                 </div>
@@ -1020,10 +733,10 @@
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group" style="display:flex;align-items:flex-end;gap:5px;">
-                            <button class="btn btn-primary" onclick="generateAllReport()" style="width:100%;">📄 Generate</button>
-                            <button class="btn btn-excel" onclick="exportAllReport()" style="width:100%;">📥 Export</button>
-                            <button class="btn btn-whatsapp" onclick="sendAllReportWhatsApp()" style="width:100%;padding:8px 12px;">📱 WhatsApp</button>
+                        <div class="form-group" style="display:flex;align-items:flex-end;gap:5px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="generateAllReport()" style="flex:1;">📄 Generate</button>
+                            <button class="btn btn-pdf" onclick="downloadAllReportPDF()" style="flex:1;">📥 PDF</button>
+                            <button class="btn btn-whatsapp" onclick="sendAllReportPDFWhatsApp()" style="flex:1;padding:8px 12px;">📱 PDF on WA</button>
                         </div>
                     </div>
                 </div>
@@ -1036,6 +749,10 @@
                 <div class="stat-card"><div class="num" id="rOT">0</div><div class="label">OT</div></div>
                 <div class="stat-card"><div class="num" id="rSalary">0</div><div class="label">Gross Salary</div></div>
                 <div class="stat-card"><div class="num num-danger" id="rAdvance">0</div><div class="label">Advance</div></div>
+            </div>
+            
+            <div class="pdf-info-box">
+                📱 <strong>PDF on WhatsApp:</strong> PDF download hoga + WhatsApp chat khulega. Bas <strong>attach icon (📎)</strong> dabakar PDF select karein aur send karein.
             </div>
             
             <div class="report-box" id="reportContent">Select worker and month, then click Generate</div>
@@ -1064,18 +781,10 @@
                 </p>
                 
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-                    <button class="select-folder-btn" onclick="selectFolder()">
-                        📁 Select Folder
-                    </button>
-                    <button class="btn btn-success" onclick="saveAllData()" style="font-size:14px;padding:10px 20px;">
-                        💾 Save All Data
-                    </button>
-                    <button class="btn btn-info" onclick="listFolderFiles()" style="font-size:14px;padding:10px 20px;">
-                        📂 View Files
-                    </button>
-                    <button class="upload-excel-btn" onclick="document.getElementById('uploadInput').click()">
-                        📤 Upload Excel
-                    </button>
+                    <button class="select-folder-btn" onclick="selectFolder()">📁 Select Folder</button>
+                    <button class="btn btn-success" onclick="saveAllData()" style="font-size:14px;padding:10px 20px;">💾 Save All Data</button>
+                    <button class="btn btn-info" onclick="listFolderFiles()" style="font-size:14px;padding:10px 20px;">📂 View Files</button>
+                    <button class="upload-excel-btn" onclick="document.getElementById('uploadInput').click()">📤 Upload Excel</button>
                 </div>
                 
                 <div style="background:#e8f5e9;padding:12px;border-radius:8px;border-left:4px solid #28a745;margin:10px 0;">
@@ -1086,9 +795,7 @@
                     ✅ Summary Sheet - Company Info & Statistics
                 </div>
                 
-                <div id="folderStatus" class="folder-status">
-                    Status message here
-                </div>
+                <div id="folderStatus" class="folder-status">Status message here</div>
                 
                 <div style="margin-top:10px;font-size:12px;color:#6c757d;">
                     ⏱️ Last saved: <span id="lastSaveTime">Never</span>
@@ -1100,14 +807,6 @@
             </div>
             
             <input type="file" id="uploadInput" accept=".xlsx,.xls" style="display:none;" onchange="uploadExcelFile(event)">
-            
-            <div class="upload-progress" id="uploadProgress">
-                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-                    <span id="uploadStatusText">Uploading...</span>
-                    <span id="uploadPercent">0%</span>
-                </div>
-                <div class="bar" id="progressBar" style="width:0%;"></div>
-            </div>
             
             <div id="uploadMsg" class="mt-10"></div>
             
@@ -1126,27 +825,6 @@
                     <button class="btn btn-advance" onclick="exportAdvancesOnly()" style="width:100%;">💰 Advances</button>
                 </div>
             </div>
-            
-            <div style="margin-top:15px;padding:15px;background:#f8f9fa;border-radius:8px;">
-                <h4 style="margin-bottom:8px;">📋 Excel File Structure (Single File)</h4>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
-                    <div style="background:white;padding:10px;border-radius:8px;border:1px solid #e9ecef;">
-                        <strong>👥 Workers Sheet</strong><br>
-                        ID, Name, Department, Mobile, Hourly Rate, OT Rate
-                    </div>
-                    <div style="background:white;padding:10px;border-radius:8px;border:1px solid #e9ecef;">
-                        <strong>📋 Attendance Sheet</strong><br>
-                        ID, Worker ID, Worker Name, Date, In, Out, Break Start, Break End, Break Hours, Net Hours, OT, Status, Salary
-                    </div>
-                    <div style="background:white;padding:10px;border-radius:8px;border:1px solid #e9ecef;">
-                        <strong>💰 Advances Sheet</strong><br>
-                        ID, Worker ID, Worker Name, Date, Amount, Reason
-                    </div>
-                </div>
-                <div style="margin-top:8px;font-size:12px;color:#6c757d;">
-                    📌 <strong>सभी Sheets एक ही Excel File में</strong> - Attendance_Data_YYYY-MM-DD.xlsx
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -1155,10 +833,18 @@
 <div id="whatsappModal" class="whatsapp-modal">
     <div class="whatsapp-modal-content">
         <div class="whatsapp-modal-header">
-            <h3>📱 Send on WhatsApp</h3>
+            <h3>📱 Send PDF on WhatsApp</h3>
             <button class="close-btn" onclick="closeWhatsAppModal()">×</button>
         </div>
         <div class="whatsapp-modal-body">
+            <div class="pdf-info-box">
+                <strong>📌 Kaise kaam karega:</strong><br>
+                1️⃣ PDF automatically download hoga<br>
+                2️⃣ WhatsApp chat khulega worker ke number ke saath<br>
+                3️⃣ <strong>📎 Attach icon</strong> dabakar PDF select karein<br>
+                4️⃣ Send button dabayein ✅
+            </div>
+            
             <div class="form-group">
                 <label>📞 Mobile Number (with country code)</label>
                 <input type="tel" id="waNumber" placeholder="e.g. 919876543210" style="width:100%;padding:10px 12px;border:2px solid #e9ecef;border-radius:8px;font-size:13px;">
@@ -1171,16 +857,18 @@
             </div>
             
             <div class="form-group">
-                <label>📝 Message Preview (Edit kar sakte hain)</label>
+                <label>📝 Message (PDF ke saath jayega)</label>
                 <textarea id="waMessage"></textarea>
             </div>
             
             <div class="whatsapp-preview" id="waPreview"></div>
         </div>
         <div class="whatsapp-modal-footer">
-            <button class="btn btn-info" onclick="copyWhatsAppMessage()">📋 Copy Message</button>
-            <button class="btn btn-whatsapp" onclick="sendWhatsApp()" style="padding:10px 20px;font-size:14px;">
-                📱 Open WhatsApp & Send
+            <button class="btn btn-pdf" onclick="downloadPDFFromModal()" style="padding:10px 20px;font-size:14px;">
+                📥 Download PDF Only
+            </button>
+            <button class="btn btn-whatsapp" onclick="sendWhatsAppPDF()" style="padding:10px 20px;font-size:14px;">
+                📱 Download PDF & Open WhatsApp
             </button>
             <button class="btn btn-danger" onclick="closeWhatsAppModal()">❌ Cancel</button>
         </div>
@@ -1189,7 +877,7 @@
 
 <script>
 // ============================================
-// DATA
+// GLOBAL DATA
 // ============================================
 let data = {
     workers: [],
@@ -1205,9 +893,13 @@ let data = {
     currentFileName: ''
 };
 
+// WhatsApp modal state
+let waCurrentWorkerId = null;
+let waCurrentReportType = null;
+let waPendingPDF = null; // stores current PDF blob
+
 // ============================================
 // INDEXEDDB - Folder Handle Persistence
-// ✅ Ye folder ko permanently save karta hai
 // ============================================
 const DB_NAME = 'AttendanceSystemDB';
 const DB_VERSION = 1;
@@ -1236,9 +928,7 @@ async function saveFolderHandleToDB(handle) {
             tx.oncomplete = () => res(true);
             tx.onerror = () => rej(tx.error);
         });
-    } catch (err) {
-        console.error('Save handle error:', err);
-    }
+    } catch (err) { console.error('Save handle error:', err); }
 }
 
 async function getFolderHandleFromDB() {
@@ -1250,10 +940,7 @@ async function getFolderHandleFromDB() {
             req.onsuccess = () => res(req.result || null);
             req.onerror = () => rej(req.error);
         });
-    } catch (err) {
-        console.error('Get handle error:', err);
-        return null;
-    }
+    } catch (err) { console.error('Get handle error:', err); return null; }
 }
 
 async function clearFolderHandleFromDB() {
@@ -1267,33 +954,24 @@ async function clearFolderHandleFromDB() {
 // ============================================
 // FOLDER SYSTEM - Auto Restore
 // ============================================
-
-// ✅ Auto-restore folder on page load
 async function restoreFolder() {
     try {
         if (!('showDirectoryPicker' in window)) return false;
-        
         const handle = await getFolderHandleFromDB();
-        if (!handle) {
-            console.log('No saved folder handle found');
-            return false;
-        }
+        if (!handle) return false;
         
         const permission = await handle.queryPermission({ mode: 'readwrite' });
         console.log('📁 Folder permission status:', permission);
         
         if (permission === 'granted') {
-            // ✅ Auto restore - no click needed
             data.folderHandle = handle;
             data.folderName = handle.name;
             document.getElementById('folderPath').textContent = '📁 ' + handle.name + ' ✅ Auto-restored';
             document.getElementById('folderPath').style.color = '#00b894';
             showFolderStatus('✅ Folder auto-restored: <strong>' + handle.name + '</strong><br>Ab data automatic save hoga!', 'success');
             await findExistingFile();
-            console.log('✅ Folder auto-restored successfully');
             return true;
         } else if (permission === 'prompt') {
-            // One click needed
             data.folderHandle = handle;
             data.folderName = handle.name;
             document.getElementById('folderPath').textContent = '📁 ' + handle.name + ' (click Restore)';
@@ -1306,16 +984,12 @@ async function restoreFolder() {
             showFolderStatus('ℹ️ Previous folder permission denied. Please select folder again.', 'info');
             return false;
         }
-    } catch (err) {
-        console.error('Restore folder error:', err);
-        return false;
-    }
+    } catch (err) { console.error('Restore folder error:', err); return false; }
 }
 
 function showRestoreButton(handle) {
     const pathEl = document.getElementById('folderPath');
     const parent = pathEl.parentElement;
-    
     const oldBtn = document.getElementById('restoreFolderBtn');
     if (oldBtn) oldBtn.remove();
     
@@ -1343,7 +1017,6 @@ function showRestoreButton(handle) {
             showFolderStatus('❌ Error: ' + err.message, 'error');
         }
     };
-    
     parent.appendChild(btn);
 }
 
@@ -1353,14 +1026,10 @@ async function selectFolder() {
             showFolderStatus('❌ Your browser does not support File System Access API. Please use Chrome or Edge.', 'error');
             return;
         }
-
         showFolderStatus('⏳ Opening folder picker...', 'saving');
-        
         const folderHandle = await window.showDirectoryPicker();
         data.folderHandle = folderHandle;
         data.folderName = folderHandle.name;
-        
-        // ✅ Save handle to IndexedDB permanently
         await saveFolderHandleToDB(folderHandle);
         
         document.getElementById('folderPath').textContent = '📁 ' + folderHandle.name + ' ✅ Saved';
@@ -1370,10 +1039,8 @@ async function selectFolder() {
         const oldBtn = document.getElementById('restoreFolderBtn');
         if (oldBtn) oldBtn.remove();
         
-        showFolderStatus('✅ Folder selected: <strong>' + folderHandle.name + '</strong><br>Ye ab permanently save ho gaya hai. Next time automatic restore hoga.', 'success');
-        
+        showFolderStatus('✅ Folder selected: <strong>' + folderHandle.name + '</strong><br>Ye ab permanently save ho gaya hai.', 'success');
         await findExistingFile();
-        
     } catch(err) {
         if (err.name === 'AbortError' || err.message.includes('abort')) {
             showFolderStatus('ℹ️ Folder selection cancelled', 'info');
@@ -1389,15 +1056,11 @@ async function findExistingFile() {
         for await (const entry of data.folderHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.xlsx') && entry.name.includes('Attendance_Data')) {
                 data.currentFileName = entry.name;
-                showFolderStatus('📂 Found existing file: ' + entry.name + '. New data will be added to this file.', 'info');
                 await loadExcelFile(entry);
                 return;
             }
         }
-        showFolderStatus('📂 No existing file found. New file will be created.', 'info');
-    } catch(err) {
-        console.error('Error finding file:', err);
-    }
+    } catch(err) { console.error('Error finding file:', err); }
 }
 
 async function loadExcelFile(fileHandle) {
@@ -1412,17 +1075,12 @@ async function loadExcelFile(fileHandle) {
             data.workers = [];
             rows.forEach(r => {
                 data.workers.push({
-                    id: r['ID'] || 0,
-                    name: r['Name'] || '',
-                    department: r['Department'] || '',
-                    mobile: r['Mobile'] || '',
-                    hourlyRate: r['Hourly Rate'] || 100,
-                    overtimeRate: r['OT Rate'] || 150
+                    id: r['ID'] || 0, name: r['Name'] || '',
+                    department: r['Department'] || '', mobile: r['Mobile'] || '',
+                    hourlyRate: r['Hourly Rate'] || 100, overtimeRate: r['OT Rate'] || 150
                 });
             });
-            if (data.workers.length > 0) {
-                data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
-            }
+            if (data.workers.length > 0) data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
         }
         
         const wsAttendance = workbook.Sheets['Attendance'];
@@ -1431,24 +1089,16 @@ async function loadExcelFile(fileHandle) {
             data.attendance = [];
             rows.forEach(r => {
                 data.attendance.push({
-                    id: r['ID'] || 0,
-                    workerId: r['Worker ID'] || 0,
-                    workerName: r['Worker Name'] || '',
-                    date: r['Date'] || '',
-                    checkIn: r['In'] || '',
-                    checkOut: r['Out'] || '',
-                    breakStart: r['Break Start'] || '',
-                    breakEnd: r['Break End'] || '',
-                    breakHours: r['Break Hours'] || 0,
-                    hours: r['Net Hours'] || 0,
-                    overtime: r['OT'] || 0,
-                    status: r['Status'] || 'Present',
+                    id: r['ID'] || 0, workerId: r['Worker ID'] || 0,
+                    workerName: r['Worker Name'] || '', date: r['Date'] || '',
+                    checkIn: r['In'] || '', checkOut: r['Out'] || '',
+                    breakStart: r['Break Start'] || '', breakEnd: r['Break End'] || '',
+                    breakHours: r['Break Hours'] || 0, hours: r['Net Hours'] || 0,
+                    overtime: r['OT'] || 0, status: r['Status'] || 'Present',
                     salary: r['Salary'] || 0
                 });
             });
-            if (data.attendance.length > 0) {
-                data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
-            }
+            if (data.attendance.length > 0) data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
         }
         
         const wsAdvances = workbook.Sheets['Advances'];
@@ -1457,17 +1107,12 @@ async function loadExcelFile(fileHandle) {
             data.advances = [];
             rows.forEach(r => {
                 data.advances.push({
-                    id: r['ID'] || 0,
-                    workerId: r['Worker ID'] || 0,
-                    workerName: r['Worker Name'] || '',
-                    date: r['Date'] || '',
-                    amount: r['Amount'] || 0,
-                    reason: r['Reason'] || ''
+                    id: r['ID'] || 0, workerId: r['Worker ID'] || 0,
+                    workerName: r['Worker Name'] || '', date: r['Date'] || '',
+                    amount: r['Amount'] || 0, reason: r['Reason'] || ''
                 });
             });
-            if (data.advances.length > 0) {
-                data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
-            }
+            if (data.advances.length > 0) data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
         }
         
         saveToStorage();
@@ -1475,9 +1120,7 @@ async function loadExcelFile(fileHandle) {
         loadWorkers();
         loadAttendance();
         loadAdvances();
-        
-        showFolderStatus('✅ Data loaded from existing file: ' + fileHandle.name, 'success');
-        
+        showFolderStatus('✅ Data loaded from: ' + fileHandle.name, 'success');
     } catch(err) {
         console.error('Error loading file:', err);
         showFolderStatus('❌ Error loading file: ' + err.message, 'error');
@@ -1486,64 +1129,52 @@ async function loadExcelFile(fileHandle) {
 
 async function saveAllData() {
     if (!data.folderHandle) {
-        showFolderStatus('⚠️ Please select a folder first! Click "Select Folder"', 'error');
+        showFolderStatus('⚠️ Please select a folder first!', 'error');
         return;
     }
     
-    // ✅ Verify permission before saving
     try {
         const perm = await data.folderHandle.queryPermission({ mode: 'readwrite' });
         if (perm !== 'granted') {
             const req = await data.folderHandle.requestPermission({ mode: 'readwrite' });
             if (req !== 'granted') {
-                showFolderStatus('❌ Folder permission denied. Please select folder again.', 'error');
+                showFolderStatus('❌ Folder permission denied.', 'error');
                 return;
             }
         }
-    } catch (err) {
-        console.error('Permission check error:', err);
-    }
+    } catch (err) { console.error('Permission check error:', err); }
     
-    showFolderStatus('⏳ Creating single Excel file with all data...', 'saving');
+    showFolderStatus('⏳ Saving data...', 'saving');
     
     try {
         const wb = XLSX.utils.book_new();
         
         const wData = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
         data.workers.forEach(w => wData.push([w.id, w.name, w.department, w.mobile || '', w.hourlyRate, w.overtimeRate]));
-        const ws1 = XLSX.utils.aoa_to_sheet(wData);
-        XLSX.utils.book_append_sheet(wb, ws1, 'Workers');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wData), 'Workers');
         
         const aData = [['ID','Worker ID','Worker Name','Date','In','Out','Break Start','Break End','Break Hours','Net Hours','OT','Status','Salary']];
         data.attendance.forEach(a => aData.push([a.id, a.workerId, a.workerName, a.date, a.checkIn, a.checkOut, a.breakStart||'', a.breakEnd||'', a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
-        const ws2 = XLSX.utils.aoa_to_sheet(aData);
-        XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aData), 'Attendance');
         
         const advData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
         data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
-        const ws3 = XLSX.utils.aoa_to_sheet(advData);
-        XLSX.utils.book_append_sheet(wb, ws3, 'Advances');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(advData), 'Advances');
         
         const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
         const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
         const cData = [
-            ['=== ATTENDANCE SYSTEM SUMMARY ==='],
-            [''],
+            ['=== ATTENDANCE SYSTEM SUMMARY ==='],[''],
             ['Company Name', data.companyName],
-            ['Generated', new Date().toLocaleString()],
-            [''],
-            ['📊 STATISTICS'],
+            ['Generated', new Date().toLocaleString()],[''],
             ['Total Workers', data.workers.length],
             ['Total Attendance Records', data.attendance.length],
             ['Total Advances', data.advances.length],
             ['Total Gross Salary', '₹' + totalSalary.toFixed(0)],
             ['Total Advances Given', '₹' + totalAdvance.toFixed(0)],
-            ['Net Payable', '₹' + (totalSalary - totalAdvance).toFixed(0)],
-            [''],
-            ['=== END OF REPORT ===']
+            ['Net Payable', '₹' + (totalSalary - totalAdvance).toFixed(0)]
         ];
-        const ws4 = XLSX.utils.aoa_to_sheet(cData);
-        XLSX.utils.book_append_sheet(wb, ws4, 'Summary');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cData), 'Summary');
         
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
@@ -1567,16 +1198,8 @@ async function saveAllData() {
         saveToStorage();
         updateLastSaveTime();
         
-        showFolderStatus(
-            '✅ All data saved successfully!<br>' +
-            '📄 File: <strong>' + filename + '</strong><br>' +
-            '📂 Location: <strong>' + data.folderName + '</strong><br>' +
-            '📊 Sheets: Workers (' + data.workers.length + '), Attendance (' + data.attendance.length + '), Advances (' + data.advances.length + '), Summary',
-            'success'
-        );
-        
+        showFolderStatus('✅ Data saved! File: <strong>' + filename + '</strong>', 'success');
         setTimeout(listFolderFiles, 1000);
-        
     } catch(err) {
         console.error('Save error:', err);
         showFolderStatus('❌ Error: ' + err.message, 'error');
@@ -1586,7 +1209,6 @@ async function saveAllData() {
 async function uploadExcelFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
     showFolderStatus('⏳ Reading Excel file...', 'saving');
     
     try {
@@ -1597,66 +1219,30 @@ async function uploadExcelFile(event) {
                 
                 const wsWorkers = workbook.Sheets['Workers'];
                 if (wsWorkers) {
-                    const rows = XLSX.utils.sheet_to_json(wsWorkers);
-                    data.workers = [];
-                    rows.forEach(r => {
-                        data.workers.push({
-                            id: r['ID'] || 0,
-                            name: r['Name'] || '',
-                            department: r['Department'] || '',
-                            mobile: r['Mobile'] || '',
-                            hourlyRate: r['Hourly Rate'] || 100,
-                            overtimeRate: r['OT Rate'] || 150
-                        });
-                    });
-                    if (data.workers.length > 0) {
-                        data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
-                    }
+                    data.workers = XLSX.utils.sheet_to_json(wsWorkers).map(r => ({
+                        id: r['ID'] || 0, name: r['Name'] || '', department: r['Department'] || '',
+                        mobile: r['Mobile'] || '', hourlyRate: r['Hourly Rate'] || 100, overtimeRate: r['OT Rate'] || 150
+                    }));
+                    if (data.workers.length > 0) data.nextWorkerId = Math.max(...data.workers.map(w => w.id)) + 1;
                 }
-                
                 const wsAttendance = workbook.Sheets['Attendance'];
                 if (wsAttendance) {
-                    const rows = XLSX.utils.sheet_to_json(wsAttendance);
-                    data.attendance = [];
-                    rows.forEach(r => {
-                        data.attendance.push({
-                            id: r['ID'] || 0,
-                            workerId: r['Worker ID'] || 0,
-                            workerName: r['Worker Name'] || '',
-                            date: r['Date'] || '',
-                            checkIn: r['In'] || '',
-                            checkOut: r['Out'] || '',
-                            breakStart: r['Break Start'] || '',
-                            breakEnd: r['Break End'] || '',
-                            breakHours: r['Break Hours'] || 0,
-                            hours: r['Net Hours'] || 0,
-                            overtime: r['OT'] || 0,
-                            status: r['Status'] || 'Present',
-                            salary: r['Salary'] || 0
-                        });
-                    });
-                    if (data.attendance.length > 0) {
-                        data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
-                    }
+                    data.attendance = XLSX.utils.sheet_to_json(wsAttendance).map(r => ({
+                        id: r['ID'] || 0, workerId: r['Worker ID'] || 0, workerName: r['Worker Name'] || '',
+                        date: r['Date'] || '', checkIn: r['In'] || '', checkOut: r['Out'] || '',
+                        breakStart: r['Break Start'] || '', breakEnd: r['Break End'] || '',
+                        breakHours: r['Break Hours'] || 0, hours: r['Net Hours'] || 0,
+                        overtime: r['OT'] || 0, status: r['Status'] || 'Present', salary: r['Salary'] || 0
+                    }));
+                    if (data.attendance.length > 0) data.nextAttId = Math.max(...data.attendance.map(a => a.id)) + 1;
                 }
-                
                 const wsAdvances = workbook.Sheets['Advances'];
                 if (wsAdvances) {
-                    const rows = XLSX.utils.sheet_to_json(wsAdvances);
-                    data.advances = [];
-                    rows.forEach(r => {
-                        data.advances.push({
-                            id: r['ID'] || 0,
-                            workerId: r['Worker ID'] || 0,
-                            workerName: r['Worker Name'] || '',
-                            date: r['Date'] || '',
-                            amount: r['Amount'] || 0,
-                            reason: r['Reason'] || ''
-                        });
-                    });
-                    if (data.advances.length > 0) {
-                        data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
-                    }
+                    data.advances = XLSX.utils.sheet_to_json(wsAdvances).map(r => ({
+                        id: r['ID'] || 0, workerId: r['Worker ID'] || 0, workerName: r['Worker Name'] || '',
+                        date: r['Date'] || '', amount: r['Amount'] || 0, reason: r['Reason'] || ''
+                    }));
+                    if (data.advances.length > 0) data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
                 }
                 
                 saveToStorage();
@@ -1664,26 +1250,15 @@ async function uploadExcelFile(event) {
                 loadWorkers();
                 loadAttendance();
                 loadAdvances();
-                
                 showFolderStatus('✅ Data loaded from uploaded file!', 'success');
-                document.getElementById('uploadMsg').innerHTML = '<div style="background:#d4edda;padding:12px;border-radius:8px;color:#155724;">✅ File uploaded and data loaded successfully!</div>';
-                
-            } catch(err) {
-                showFolderStatus('❌ Error reading file: ' + err.message, 'error');
-            }
+            } catch(err) { showFolderStatus('❌ Error reading file: ' + err.message, 'error'); }
         };
         reader.readAsArrayBuffer(file);
-        
-    } catch(err) {
-        showFolderStatus('❌ Error: ' + err.message, 'error');
-    }
+    } catch(err) { showFolderStatus('❌ Error: ' + err.message, 'error'); }
 }
 
 function triggerAutoSave(reason = 'Data changed') {
-    console.log('🔄 Auto-save triggered:', reason);
-    if (data.folderHandle) {
-        saveAllData();
-    }
+    if (data.folderHandle) saveAllData();
 }
 
 async function listFolderFiles() {
@@ -1691,33 +1266,20 @@ async function listFolderFiles() {
         showFolderStatus('⚠️ Please select a folder first!', 'error');
         return;
     }
-    
-    showFolderStatus('📂 Loading files...', 'saving');
-    
     try {
         const entries = [];
         const fileList = document.getElementById('folderFileList');
-        
         for await (const entry of data.folderHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.xlsx')) {
                 const file = await entry.getFile();
-                entries.push({
-                    name: entry.name,
-                    size: file.size,
-                    time: file.lastModified,
-                    handle: entry
-                });
+                entries.push({ name: entry.name, size: file.size, time: file.lastModified });
             }
         }
-        
         entries.sort((a, b) => b.time - a.time);
-        
         if (entries.length === 0) {
-            fileList.innerHTML = '<div class="text-muted text-center">No Excel files found in this folder</div>';
-            showFolderStatus('📂 No Excel files found', 'info');
+            fileList.innerHTML = '<div class="text-muted text-center">No Excel files</div>';
             return;
         }
-        
         fileList.innerHTML = entries.map(file => `
             <div class="folder-file-item">
                 <span class="name" onclick="loadFileFromList('${file.name}')">📄 ${file.name}</span>
@@ -1725,13 +1287,7 @@ async function listFolderFiles() {
                 <span class="size">${(file.size/1024).toFixed(1)} KB</span>
             </div>
         `).join('');
-        
-        showFolderStatus('📂 Found ' + entries.length + ' Excel files', 'success');
-        
-    } catch(err) {
-        console.error('List error:', err);
-        showFolderStatus('❌ Error listing files: ' + err.message, 'error');
-    }
+    } catch(err) { console.error('List error:', err); }
 }
 
 async function loadFileFromList(fileName) {
@@ -1739,10 +1295,7 @@ async function loadFileFromList(fileName) {
         const fileHandle = await data.folderHandle.getFileHandle(fileName);
         await loadExcelFile(fileHandle);
         data.currentFileName = fileName;
-        showFolderStatus('✅ Loaded: ' + fileName, 'success');
-    } catch(err) {
-        showFolderStatus('❌ Error loading file: ' + err.message, 'error');
-    }
+    } catch(err) { showFolderStatus('❌ Error: ' + err.message, 'error'); }
 }
 
 function showFolderStatus(message, type = 'info') {
@@ -1758,29 +1311,387 @@ function updateLastSaveTime() {
 }
 
 // ============================================
-// WHATSAPP INTEGRATION
+// PDF GENERATION
 // ============================================
 
-let waCurrentWorkerId = null;
-let waCurrentReportType = null;
+// ✅ Generate PDF for single worker report
+function generateWorkerPDF(workerId, month, year, options = {}) {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        const worker = data.workers.find(w => w.id == workerId);
+        if (!worker) { alert('Worker not found'); return null; }
+        
+        const records = data.attendance.filter(a => {
+            if (!a.date) return false;
+            const d = new Date(a.date);
+            return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        const advances = data.advances.filter(a => {
+            if (!a.date) return false;
+            const d = new Date(a.date);
+            return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+        });
+        
+        const totalHours = records.reduce((s, r) => s + r.hours, 0);
+        const totalOT = records.reduce((s, r) => s + r.overtime, 0);
+        const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+        const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
+        const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
+        const netPayable = totalSalary - totalAdvance;
+        
+        const monthName = getMonthName(month);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        // ===== HEADER =====
+        doc.setFillColor(9, 132, 227);
+        doc.rect(0, 0, pageWidth, 30, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(data.companyName.toUpperCase(), pageWidth / 2, 13, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text('ATTENDANCE & SALARY REPORT', pageWidth / 2, 21, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.text(monthName + ' ' + year, pageWidth / 2, 27, { align: 'center' });
+        
+        doc.setTextColor(0, 0, 0);
+        
+        // ===== WORKER DETAILS =====
+        let y = 40;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Worker Details', 14, y);
+        y += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Name:', 14, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(worker.name, 45, y);
+        y += 6;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.text('Department:', 14, y);
+        doc.text(worker.department || 'N/A', 45, y);
+        y += 6;
+        
+        doc.text('Mobile:', 14, y);
+        doc.text(worker.mobile || 'N/A', 45, y);
+        y += 6;
+        
+        doc.text('Hourly Rate:', 14, y);
+        doc.text('Rs. ' + worker.hourlyRate + '/hr', 45, y);
+        y += 6;
+        
+        doc.text('OT Rate:', 14, y);
+        doc.text('Rs. ' + worker.overtimeRate + '/hr', 45, y);
+        y += 10;
+        
+        // ===== SUMMARY BOX =====
+        doc.setFillColor(232, 245, 233);
+        doc.rect(14, y, pageWidth - 28, 8, 'F');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Summary', 16, y + 5.5);
+        y += 12;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        // Summary table
+        const summaryData = [
+            ['Total Days', String(records.length), 'Total Hours', totalHours.toFixed(1)],
+            ['Overtime Hours', totalOT.toFixed(1), 'Break Hours', totalBreak.toFixed(1)],
+            ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Advance Taken', 'Rs. ' + totalAdvance.toFixed(0)],
+            ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
+        ];
+        
+        doc.autoTable({
+            startY: y,
+            head: [],
+            body: summaryData,
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: {
+                0: { fontStyle: 'bold', fillColor: [240, 247, 255] },
+                2: { fontStyle: 'bold', fillColor: [240, 247, 255] }
+            }
+        });
+        
+        y = doc.lastAutoTable.finalY + 10;
+        
+        // ===== ADVANCE DETAILS =====
+        if (advances.length > 0) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Advance Details', 14, y);
+            y += 4;
+            
+            const advData = advances.map(a => [a.date, 'Rs. ' + a.amount.toFixed(0), a.reason || '-']);
+            doc.autoTable({
+                startY: y,
+                head: [['Date', 'Amount', 'Reason']],
+                body: advData,
+                theme: 'striped',
+                headStyles: { fillColor: [225, 112, 85], textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 10, cellPadding: 3 }
+            });
+            y = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ===== DAILY ATTENDANCE =====
+        if (records.length > 0) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Daily Attendance', 14, y);
+            y += 4;
+            
+            const attData = records.map(r => [
+                r.date,
+                r.checkIn || '-',
+                r.checkOut || '-',
+                r.breakHours ? r.breakHours.toFixed(1) : '0',
+                r.hours.toFixed(1),
+                r.overtime.toFixed(1),
+                r.status,
+                'Rs. ' + r.salary.toFixed(0)
+            ]);
+            
+            doc.autoTable({
+                startY: y,
+                head: [['Date','In','Out','Break','Hours','OT','Status','Salary']],
+                body: attData,
+                theme: 'grid',
+                headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+                styles: { fontSize: 9, cellPadding: 2.5 },
+                alternateRowStyles: { fillColor: [248, 249, 250] }
+            });
+            y = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ===== FOOTER =====
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Generated on ' + new Date().toLocaleString('en-IN') + ' | ' + data.companyName, 
+                 pageWidth / 2, pageHeight - 8, { align: 'center' });
+        
+        // Page numbers
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.text('Page ' + i + ' of ' + pageCount, pageWidth - 20, pageHeight - 8);
+        }
+        
+        return doc;
+    } catch (err) {
+        console.error('PDF generation error:', err);
+        alert('PDF generation failed: ' + err.message);
+        return null;
+    }
+}
 
-function openWhatsAppForWorker(workerId) {
+// ✅ Generate PDF for all workers
+function generateAllWorkersPDF(month, year) {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        const records = data.attendance.filter(a => {
+            if (!a.date) return false;
+            const d = new Date(a.date);
+            return d.getMonth() === month - 1 && d.getFullYear() === year;
+        });
+        const advances = data.advances.filter(a => {
+            if (!a.date) return false;
+            const d = new Date(a.date);
+            return d.getMonth() === month - 1 && d.getFullYear() === year;
+        });
+        
+        const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+        const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
+        const netPayable = totalSalary - totalAdvance;
+        const totalHours = records.reduce((s, r) => s + r.hours, 0);
+        const totalOT = records.reduce((s, r) => s + r.overtime, 0);
+        
+        const monthName = getMonthName(month);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        // Header
+        doc.setFillColor(9, 132, 227);
+        doc.rect(0, 0, pageWidth, 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(data.companyName.toUpperCase(), pageWidth / 2, 13, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text('MONTHLY ATTENDANCE REPORT - ALL WORKERS', pageWidth / 2, 21, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(monthName + ' ' + year, pageWidth / 2, 27, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        
+        // Grand totals
+        let y = 40;
+        doc.setFillColor(232, 245, 233);
+        doc.rect(14, y, pageWidth - 28, 8, 'F');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Grand Total', 16, y + 5.5);
+        y += 12;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.autoTable({
+            startY: y,
+            head: [],
+            body: [
+                ['Total Workers', String(new Set(records.map(r => r.workerId)).size), 'Total Days', String(records.length)],
+                ['Total Hours', totalHours.toFixed(1), 'Total OT', totalOT.toFixed(1)],
+                ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Total Advance', 'Rs. ' + totalAdvance.toFixed(0)],
+                ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
+            ],
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 3 },
+            columnStyles: {
+                0: { fontStyle: 'bold', fillColor: [240, 247, 255] },
+                2: { fontStyle: 'bold', fillColor: [240, 247, 255] }
+            }
+        });
+        y = doc.lastAutoTable.finalY + 10;
+        
+        // Per worker summary
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Worker-wise Summary', 14, y);
+        y += 4;
+        
+        const workerMap = {};
+        records.forEach(r => {
+            if (!workerMap[r.workerId]) {
+                const w = data.workers.find(x => x.id === r.workerId);
+                workerMap[r.workerId] = {
+                    name: w ? w.name : 'Unknown',
+                    dept: w ? w.department : '-',
+                    mobile: w ? w.mobile || '-' : '-',
+                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0
+                };
+            }
+            workerMap[r.workerId].days++;
+            workerMap[r.workerId].hours += r.hours;
+            workerMap[r.workerId].ot += r.overtime;
+            workerMap[r.workerId].salary += r.salary;
+        });
+        
+        advances.forEach(a => {
+            if (workerMap[a.workerId]) workerMap[a.workerId].advance += a.amount;
+        });
+        
+        const workerTableData = Object.values(workerMap).map(w => [
+            w.name, w.dept, String(w.days), w.hours.toFixed(1),
+            w.ot.toFixed(1), 'Rs. ' + w.salary.toFixed(0),
+            'Rs. ' + w.advance.toFixed(0),
+            'Rs. ' + (w.salary - w.advance).toFixed(0)
+        ]);
+        
+        doc.autoTable({
+            startY: y,
+            head: [['Name','Department','Days','Hours','OT','Salary','Advance','Net']],
+            body: workerTableData,
+            theme: 'grid',
+            headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+            styles: { fontSize: 9, cellPadding: 2.5 },
+            alternateRowStyles: { fillColor: [248, 249, 250] }
+        });
+        
+        // Footer
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Generated on ' + new Date().toLocaleString('en-IN') + ' | ' + data.companyName, 
+                     pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.text('Page ' + i + ' of ' + pageCount, pageWidth - 20, pageHeight - 8);
+        }
+        
+        return doc;
+    } catch (err) {
+        console.error('PDF generation error:', err);
+        alert('PDF generation failed: ' + err.message);
+        return null;
+    }
+}
+
+// Download PDF helper
+function downloadDocPDF(doc, filename) {
+    if (!doc) return;
+    doc.save(filename);
+}
+
+// ============================================
+// WHATSAPP PDF INTEGRATION
+// ============================================
+
+// ✅ Worker ko PDF WhatsApp par bhejo
+function openWhatsAppForWorkerPDF(workerId) {
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
-    
-    if (!worker.mobile) {
-        alert('⚠️ Is worker ka mobile number nahi hai. Pehle mobile number add karein.');
-        return;
-    }
-    
-    waCurrentWorkerId = workerId;
-    waCurrentReportType = 'worker';
+    if (!worker.mobile) { alert('⚠️ Is worker ka mobile number nahi hai.'); return; }
     
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
     
-    const message = generateWorkerWhatsAppMessage(workerId, month, year);
+    // Generate PDF
+    const doc = generateWorkerPDF(workerId, month, year);
+    if (!doc) return;
+    
+    // Store PDF for later
+    waPendingPDF = { doc, workerId, month, year, type: 'single' };
+    waCurrentWorkerId = workerId;
+    waCurrentReportType = 'pdf';
+    
+    // Generate message
+    const worker2 = data.workers.find(w => w.id === workerId);
+    const records = data.attendance.filter(a => {
+        if (!a.date) return false;
+        const d = new Date(a.date);
+        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
+    const advances = data.advances.filter(a => {
+        if (!a.date) return false;
+        const d = new Date(a.date);
+        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
+    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
+    const netPayable = totalSalary - totalAdvance;
+    
+    const message = `*${data.companyName.toUpperCase()}*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `*📋 ${getMonthName(month)} ${year} Report*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Namaste *${worker2.name}* ji,\n\n` +
+        `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
+        `*📊 Summary:*\n` +
+        `• Total Days: *${records.length}*\n` +
+        `• Net Payable: *₹${netPayable.toFixed(0)}*\n\n` +
+        `_Kripya PDF file check karein._\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `_${data.companyName}_`;
     
     document.getElementById('waNumber').value = formatWhatsAppNumber(worker.mobile);
     document.getElementById('waWorkerName').value = worker.name + ' (' + worker.department + ')';
@@ -1790,7 +1701,8 @@ function openWhatsAppForWorker(workerId) {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
-function sendSingleReportWhatsApp() {
+// ✅ Single report PDF WhatsApp
+function sendSingleReportPDFWhatsApp() {
     const workerId = document.getElementById('singleWorkerReport').value;
     if (!workerId) { alert('Pehle worker select karein'); return; }
     
@@ -1801,10 +1713,41 @@ function sendSingleReportWhatsApp() {
     const month = parseInt(document.getElementById('singleReportMonth').value);
     const year = parseInt(document.getElementById('singleReportYear').value);
     
-    waCurrentWorkerId = workerId;
-    waCurrentReportType = 'report';
+    const doc = generateWorkerPDF(workerId, month, year);
+    if (!doc) return;
     
-    const message = generateWorkerWhatsAppMessage(workerId, month, year);
+    waPendingPDF = { doc, workerId, month, year, type: 'single' };
+    waCurrentWorkerId = workerId;
+    waCurrentReportType = 'pdf';
+    
+    const records = data.attendance.filter(a => {
+        if (!a.date) return false;
+        const d = new Date(a.date);
+        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
+    const advances = data.advances.filter(a => {
+        if (!a.date) return false;
+        const d = new Date(a.date);
+        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
+    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
+    const netPayable = totalSalary - totalAdvance;
+    
+    const message = `*${data.companyName.toUpperCase()}*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `*📋 ${getMonthName(month)} ${year} Report*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Namaste *${worker.name}* ji,\n\n` +
+        `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
+        `*📊 Summary:*\n` +
+        `• Total Days: *${records.length}*\n` +
+        `• Gross Salary: *₹${totalSalary.toFixed(0)}*\n` +
+        `• Advance: *₹${totalAdvance.toFixed(0)}*\n` +
+        `• *Net Payable: ₹${netPayable.toFixed(0)}*\n\n` +
+        `_Kripya PDF file check karein._\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `_${data.companyName}_`;
     
     document.getElementById('waNumber').value = formatWhatsAppNumber(worker.mobile);
     document.getElementById('waWorkerName').value = worker.name + ' (' + worker.department + ')';
@@ -1814,17 +1757,18 @@ function sendSingleReportWhatsApp() {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
-function sendAllReportWhatsApp() {
+// ✅ All workers report PDF WhatsApp
+function sendAllReportPDFWhatsApp() {
     const month = parseInt(document.getElementById('reportMonth').value);
     const year = parseInt(document.getElementById('reportYear').value);
     
     if (data.workers.length === 0) {
-        alert('Koi worker nahi hai. Pehle worker add karein.');
+        alert('Koi worker nahi hai.');
         return;
     }
     
     const selected = prompt(
-        'Kis worker ko report bhejni hai?\n\n' +
+        'Kis worker ko PDF bhejni hai?\n\n' +
         'Enter worker ID:\n' + 
         data.workers.map(w => `${w.id} - ${w.name} ${w.mobile ? '📱' : '❌'}`).join('\n')
     );
@@ -1834,12 +1778,29 @@ function sendAllReportWhatsApp() {
     const workerId = parseInt(selected);
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Invalid worker ID'); return; }
-    if (!worker.mobile) { alert('⚠️ Is worker ka mobile number nahi hai'); return; }
+    if (!worker.mobile) { alert('⚠️ Mobile number nahi hai'); return; }
     
+    const doc = generateWorkerPDF(workerId, month, year);
+    if (!doc) return;
+    
+    waPendingPDF = { doc, workerId, month, year, type: 'single' };
     waCurrentWorkerId = workerId;
-    waCurrentReportType = 'allreport';
+    waCurrentReportType = 'pdf';
     
-    const message = generateWorkerWhatsAppMessage(workerId, month, year);
+    const records = data.attendance.filter(a => {
+        if (!a.date) return false;
+        const d = new Date(a.date);
+        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
+    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    
+    const message = `*${data.companyName.toUpperCase()}*\n` +
+        `*📋 ${getMonthName(month)} ${year} Report*\n\n` +
+        `Namaste *${worker.name}* ji,\n\n` +
+        `Aapki monthly report PDF mein attach hai.\n\n` +
+        `• Days: *${records.length}*\n` +
+        `• Gross: *₹${totalSalary.toFixed(0)}*\n\n` +
+        `_${data.companyName}_`;
     
     document.getElementById('waNumber').value = formatWhatsAppNumber(worker.mobile);
     document.getElementById('waWorkerName').value = worker.name + ' (' + worker.department + ')';
@@ -1849,112 +1810,35 @@ function sendAllReportWhatsApp() {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
+// ✅ Send current worker summary as PDF WhatsApp
 function sendCurrentWorkerSummaryWhatsApp() {
     const workerId = document.getElementById('attWorkerFilter').value;
     if (!workerId) {
         alert('Pehle worker select karein (dropdown se)');
         return;
     }
-    openWhatsAppForWorker(parseInt(workerId));
+    openWhatsAppForWorkerPDF(parseInt(workerId));
 }
 
-function generateWorkerWhatsAppMessage(workerId, month, year) {
-    const worker = data.workers.find(w => w.id === workerId);
-    if (!worker) return '';
-    
-    const records = data.attendance.filter(a => {
-        if (!a.date) return false;
-        const d = new Date(a.date);
-        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    const advances = data.advances.filter(a => {
-        if (!a.date) return false;
-        const d = new Date(a.date);
-        return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
-    });
-    
-    const totalHours = records.reduce((s, r) => s + r.hours, 0);
-    const totalOT = records.reduce((s, r) => s + r.overtime, 0);
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
-    const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
-    const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
-    
-    const monthName = getMonthName(month);
-    
-    let msg = '';
-    msg += `*${data.companyName.toUpperCase()}*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `*📋 ATTENDANCE REPORT*\n`;
-    msg += `*${monthName} ${year}*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-    msg += `*👤 Worker Details*\n`;
-    msg += `Name: *${worker.name}*\n`;
-    msg += `Department: ${worker.department}\n`;
-    msg += `Mobile: ${worker.mobile || 'N/A'}\n`;
-    msg += `Rate: ₹${worker.hourlyRate}/hr\n`;
-    msg += `OT Rate: ₹${worker.overtimeRate}/hr\n\n`;
-    
-    msg += `*📊 Summary*\n`;
-    msg += `• Total Days: *${records.length}*\n`;
-    msg += `• Total Hours: *${totalHours.toFixed(1)}*\n`;
-    msg += `• Overtime: *${totalOT.toFixed(1)} hrs*\n`;
-    msg += `• Break: ${totalBreak.toFixed(1)} hrs\n\n`;
-    
-    msg += `*💰 Salary Calculation*\n`;
-    msg += `• Gross Salary: *₹${totalSalary.toFixed(0)}*\n`;
-    msg += `• Advance Taken: *₹${totalAdvance.toFixed(0)}*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `• *Net Payable: ₹${netPayable.toFixed(0)}*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    if (advances.length > 0) {
-        msg += `*💸 Advance Details*\n`;
-        advances.forEach(a => {
-            msg += `• ${a.date}: ₹${a.amount.toFixed(0)}`;
-            if (a.reason) msg += ` (${a.reason})`;
-            msg += `\n`;
-        });
-        msg += `\n`;
+// ✅ Download PDF only (from modal)
+function downloadPDFFromModal() {
+    if (!waPendingPDF || !waPendingPDF.doc) {
+        alert('PDF generate nahi hua. Please dobara try karein.');
+        return;
     }
-    
-    if (records.length > 0 && records.length <= 31) {
-        msg += `*📅 Daily Attendance*\n`;
-        records.forEach(r => {
-            const day = new Date(r.date).getDate();
-            msg += `${day}/${month}/${year.toString().slice(-2)}: `;
-            msg += `${r.hours.toFixed(1)}h`;
-            if (r.overtime > 0) msg += ` +${r.overtime.toFixed(1)}OT`;
-            msg += ` | ₹${r.salary.toFixed(0)}\n`;
-        });
-        msg += `\n`;
-    }
-    
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `_Generated on ${new Date().toLocaleDateString('en-IN')}_\n`;
-    msg += `_${data.companyName}_`;
-    
-    return msg;
+    const worker = data.workers.find(w => w.id === waPendingPDF.workerId);
+    const filename = `${worker ? worker.name.replace(/\s+/g, '_') : 'Report'}_${getMonthName(waPendingPDF.month)}_${waPendingPDF.year}.pdf`;
+    waPendingPDF.doc.save(filename);
+    alert('✅ PDF downloaded: ' + filename);
 }
 
-function formatWhatsAppNumber(mobile) {
-    let num = mobile.replace(/\D/g, '');
-    
-    if (num.length === 10) {
-        num = '91' + num;
-    } else if (num.length === 11 && num.startsWith('0')) {
-        num = '91' + num.slice(1);
-    } else if (num.length === 12 && num.startsWith('91')) {
-        // already has 91
-    } else if (num.length === 13 && num.startsWith('091')) {
-        num = '91' + num.slice(3);
+// ✅ Main function - Download PDF + Open WhatsApp
+function sendWhatsAppPDF() {
+    if (!waPendingPDF || !waPendingPDF.doc) {
+        alert('PDF generate nahi hua. Please dobara try karein.');
+        return;
     }
     
-    return num;
-}
-
-function sendWhatsApp() {
     const number = document.getElementById('waNumber').value.trim();
     const message = document.getElementById('waMessage').value.trim();
     
@@ -1963,40 +1847,92 @@ function sendWhatsApp() {
     
     const cleanNumber = number.replace(/\D/g, '');
     if (cleanNumber.length < 10) {
-        alert('Please enter a valid mobile number with country code');
+        alert('Please enter a valid mobile number');
         return;
     }
     
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+    // 1. Download PDF
+    const worker = data.workers.find(w => w.id === waPendingPDF.workerId);
+    const filename = `${worker ? worker.name.replace(/\s+/g, '_') : 'Report'}_${getMonthName(waPendingPDF.month)}_${waPendingPDF.year}.pdf`;
+    waPendingPDF.doc.save(filename);
     
-    window.open(whatsappUrl, '_blank');
+    // 2. Copy message to clipboard
+    navigator.clipboard.writeText(message).catch(() => {});
     
-    closeWhatsAppModal();
-    
+    // 3. Open WhatsApp after small delay
     setTimeout(() => {
-        alert('✅ WhatsApp opened! Ab "Send" button dabayein.');
-    }, 500);
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+        
+        closeWhatsAppModal();
+        
+        // 4. Show instructions
+        setTimeout(() => {
+            alert(
+                '✅ PDF Downloaded: ' + filename + '\n\n' +
+                '📱 WhatsApp khul gaya hai.\n\n' +
+                '📎 Ab WhatsApp mein attach icon (📎) dabakar PDF select karein.\n' +
+                'Phir Send button dabayein.\n\n' +
+                '(Message already type ho chuka hai)'
+            );
+        }, 600);
+    }, 300);
 }
 
-function copyWhatsAppMessage() {
-    const message = document.getElementById('waMessage').value;
-    if (!message) { alert('No message to copy'); return; }
-    
-    navigator.clipboard.writeText(message).then(() => {
-        alert('✅ Message copied to clipboard!');
-    }).catch(() => {
-        const textarea = document.getElementById('waMessage');
-        textarea.select();
-        document.execCommand('copy');
-        alert('✅ Message copied!');
-    });
+// ============================================
+// OLD WhatsApp Text Functions (kept as fallback)
+// ============================================
+function formatWhatsAppNumber(mobile) {
+    let num = mobile.replace(/\D/g, '');
+    if (num.length === 10) num = '91' + num;
+    else if (num.length === 11 && num.startsWith('0')) num = '91' + num.slice(1);
+    else if (num.length === 13 && num.startsWith('091')) num = '91' + num.slice(3);
+    return num;
 }
 
 function closeWhatsAppModal() {
     document.getElementById('whatsappModal').classList.remove('show');
     waCurrentWorkerId = null;
     waCurrentReportType = null;
+    waPendingPDF = null;
+}
+
+function copyWhatsAppMessage() {
+    const message = document.getElementById('waMessage').value;
+    if (!message) { alert('No message'); return; }
+    navigator.clipboard.writeText(message).then(() => {
+        alert('✅ Message copied!');
+    }).catch(() => {
+        document.getElementById('waMessage').select();
+        document.execCommand('copy');
+        alert('✅ Message copied!');
+    });
+}
+
+// ============================================
+// PDF Download buttons (Reports tab)
+// ============================================
+function downloadSingleReportPDF() {
+    const workerId = document.getElementById('singleWorkerReport').value;
+    if (!workerId) { alert('Select a worker'); return; }
+    const month = parseInt(document.getElementById('singleReportMonth').value);
+    const year = parseInt(document.getElementById('singleReportYear').value);
+    
+    const doc = generateWorkerPDF(workerId, month, year);
+    if (!doc) return;
+    
+    const worker = data.workers.find(w => w.id == workerId);
+    const filename = `${worker.name.replace(/\s+/g, '_')}_${getMonthName(month)}_${year}.pdf`;
+    doc.save(filename);
+}
+
+function downloadAllReportPDF() {
+    const month = parseInt(document.getElementById('reportMonth').value);
+    const year = parseInt(document.getElementById('reportYear').value);
+    const doc = generateAllWorkersPDF(month, year);
+    if (!doc) return;
+    doc.save(`All_Workers_Report_${getMonthName(month)}_${year}.pdf`);
 }
 
 // ============================================
@@ -2018,7 +1954,6 @@ function init() {
         document.getElementById('folderPath').style.color = '#6c757d';
     }
     
-    // WhatsApp modal setup
     const waMessage = document.getElementById('waMessage');
     if (waMessage) {
         waMessage.addEventListener('input', function() {
@@ -2033,10 +1968,7 @@ function init() {
         });
     }
     
-    // ✅ AUTO RESTORE FOLDER
-    setTimeout(() => {
-        restoreFolder();
-    }, 300);
+    setTimeout(() => { restoreFolder(); }, 300);
 }
 
 function loadFromStorage() {
@@ -2060,13 +1992,8 @@ function loadFromStorage() {
             data.companyName = company;
         }
         const lastSave = localStorage.getItem('lastSaveTime');
-        if (lastSave) {
-            data.lastSaveTime = lastSave;
-        }
-    } catch(e) {
-        console.error('Error loading from storage:', e);
-    }
-    
+        if (lastSave) data.lastSaveTime = lastSave;
+    } catch(e) { console.error('Error loading:', e); }
     saveToStorage();
 }
 
@@ -2139,9 +2066,6 @@ function calculateHours() {
     } catch(e) {}
 }
 
-// ============================================
-// TAB SWITCHING
-// ============================================
 function showTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -2153,19 +2077,15 @@ function showTab(tab) {
     if (tab === 'reports') populateSingleWorkerDropdown();
 }
 
-// ============================================
-// POPULATE DROPDOWNS
-// ============================================
 function populateAllDropdowns() {
     ['attWorker', 'attWorkerFilter', 'advanceWorker', 'advanceWorkerFilter', 'singleWorkerReport'].forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
         const current = sel.value;
         const isFilter = id === 'attWorkerFilter' || id === 'advanceWorkerFilter';
-        const isSingle = id === 'singleWorkerReport';
         sel.innerHTML = '';
         if (isFilter) sel.innerHTML = '<option value="">All Workers</option>';
-        else if (isSingle || id === 'advanceWorker' || id === 'attWorker') sel.innerHTML = '<option value="">Select Worker</option>';
+        else sel.innerHTML = '<option value="">Select Worker</option>';
         data.workers.forEach(w => {
             const opt = document.createElement('option');
             opt.value = w.id;
@@ -2230,8 +2150,8 @@ function loadWorkers() {
             <td onclick="editWorker(${w.id})" style="cursor:pointer;">₹${w.overtimeRate}</td>
             <td onclick="editWorker(${w.id})" style="cursor:pointer;"><span class="badge" style="background:#fdcb6e;color:#2d3436;">✏️ Edit</span></td>
             <td>
-                <button class="btn-whatsapp" onclick="openWhatsAppForWorker(${w.id})" ${!w.mobile ? 'disabled title="No mobile number"' : ''}>
-                    📱 Send
+                <button class="btn-whatsapp" onclick="openWhatsAppForWorkerPDF(${w.id})" ${!w.mobile ? 'disabled title="No mobile number"' : ''}>
+                    📱 Send PDF
                 </button>
             </td>
         </tr>
@@ -2240,21 +2160,19 @@ function loadWorkers() {
 
 function editWorker(id) {
     const w = data.workers.find(x => x.id === id);
-    if (!w) { alert('Worker not found!'); return; }
+    if (!w) return;
     document.getElementById('editWorkerId').value = w.id;
     document.getElementById('workerName').value = w.name;
     document.getElementById('workerDept').value = w.department;
     document.getElementById('workerMobile').value = w.mobile || '';
     document.getElementById('workerHR').value = w.hourlyRate;
     document.getElementById('workerOTR').value = w.overtimeRate;
-    
     document.getElementById('workerFormTitle').textContent = '✏️ Edit Worker';
     document.getElementById('workerEditBadge').style.display = 'inline';
     document.getElementById('workerEditHint').style.display = 'flex';
     document.getElementById('saveWorkerBtn').style.display = 'none';
     document.getElementById('updateWorkerBtn').style.display = 'inline-flex';
     document.getElementById('cancelWorkerEditBtn').style.display = 'inline-flex';
-    
     document.querySelectorAll('#workerTable tr').forEach(tr => {
         tr.classList.remove('selected');
         if (tr.dataset.workerId == id) tr.classList.add('selected');
@@ -2269,7 +2187,6 @@ function saveWorker() {
     const otr = parseFloat(document.getElementById('workerOTR').value) || 150;
     if (!name || !dept) { alert('Please enter name and department'); return; }
     if (mobile && !/^[0-9]{10}$/.test(mobile)) { alert('Enter valid 10-digit mobile'); return; }
-    
     data.workers.push({ id: data.nextWorkerId++, name, department: dept, mobile, hourlyRate: hr, overtimeRate: otr });
     clearWorkerForm();
     saveToStorage();
@@ -2289,7 +2206,6 @@ function updateWorker() {
     const otr = parseFloat(document.getElementById('workerOTR').value) || 150;
     if (!name || !dept) { alert('Please enter name and department'); return; }
     if (mobile && !/^[0-9]{10}$/.test(mobile)) { alert('Enter valid 10-digit mobile'); return; }
-    
     const w = data.workers.find(x => x.id == id);
     if (w) {
         w.name = name; w.department = dept; w.mobile = mobile; w.hourlyRate = hr; w.overtimeRate = otr;
@@ -2348,7 +2264,6 @@ function loadAttendance() {
     const workerId = document.getElementById('attWorkerFilter').value;
     const month = parseInt(document.getElementById('filterMonth').value);
     const year = parseInt(document.getElementById('filterYear').value);
-    
     let records = data.attendance.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -2395,14 +2310,12 @@ function editAttendance(id) {
     document.getElementById('attHours').value = r.hours;
     document.getElementById('attOT').value = r.overtime;
     document.getElementById('breakDeducted').value = r.breakHours ? r.breakHours + ' hrs deducted' : 'No break';
-    
     document.getElementById('formTitle').textContent = '✏️ Edit Attendance';
     document.getElementById('editModeBadge').style.display = 'inline';
     document.getElementById('editHint').style.display = 'flex';
     document.getElementById('saveAttBtn').style.display = 'none';
     document.getElementById('updateAttBtn').style.display = 'inline-flex';
     document.getElementById('cancelEditBtn').style.display = 'inline-flex';
-    
     document.querySelectorAll('#attendanceTable tr').forEach(tr => {
         tr.classList.remove('selected');
         if (tr.dataset.attendanceId == id) tr.classList.add('selected');
@@ -2419,14 +2332,11 @@ function saveAttendance() {
     const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
     const hours = parseFloat(document.getElementById('attHours').value) || 0;
     const overtime = parseFloat(document.getElementById('attOT').value) || 0;
-    
     if (!workerId || !date) { alert('Select worker and date'); return; }
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
-    
     const salary = (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
     const status = hours === 0 ? 'Absent' : (overtime > 0 ? 'Overtime' : 'Present');
-    
     data.attendance.push({
         id: data.nextAttId++, workerId, workerName: worker.name, date, checkIn, checkOut,
         breakStart, breakEnd, breakHours, hours, overtime, status, salary
@@ -2450,11 +2360,9 @@ function updateAttendance() {
     const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
     const hours = parseFloat(document.getElementById('attHours').value) || 0;
     const overtime = parseFloat(document.getElementById('attOT').value) || 0;
-    
     if (!workerId || !date) { alert('Select worker and date'); return; }
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
-    
     const r = data.attendance.find(a => a.id == id);
     if (r) {
         r.workerId = workerId; r.workerName = worker.name; r.date = date;
@@ -2467,7 +2375,7 @@ function updateAttendance() {
         saveToStorage();
         loadAttendance();
         triggerAutoSave('Attendance updated');
-        alert('✅ Attendance updated!');
+        alert('✅ Updated!');
     }
 }
 
@@ -2480,7 +2388,7 @@ function deleteAttendance() {
     saveToStorage();
     loadAttendance();
     triggerAutoSave('Attendance deleted');
-    alert('✅ Record deleted!');
+    alert('✅ Deleted!');
 }
 
 function clearAttForm() {
@@ -2516,7 +2424,6 @@ function showWorkerSummary(id) {
     const advances = data.advances.filter(a => a.workerId === id);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const netPayable = totalSalary - totalAdvance;
-    
     document.getElementById('summaryBox').innerHTML = `
         <div style="font-weight:600;font-size:15px;">${worker.name}</div>
         <div style="color:#6c757d;font-size:13px;">${worker.department} | 📱 ${worker.mobile || 'N/A'}</div>
@@ -2544,7 +2451,6 @@ function loadAdvances() {
     if (workerId) records = records.filter(a => a.workerId == workerId);
     records.sort((a, b) => new Date(b.date) - new Date(a.date));
     document.getElementById('advanceCount').textContent = records.length + ' records';
-    
     const tbody = document.getElementById('advanceTable');
     if (records.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No advance records</td></tr>';
@@ -2559,7 +2465,6 @@ function loadAdvances() {
             <td><span class="badge" style="background:#f8d7da;color:#721c24;">✏️ Edit</span></td>
         </tr>`;
     }).join('');
-    
     if (workerId) showAdvanceSummary(parseInt(workerId));
     else document.getElementById('advanceSummary').innerHTML = '<div class="text-muted text-center">Select a worker</div>';
 }
@@ -2588,7 +2493,7 @@ function saveAdvance() {
     const date = document.getElementById('advanceDate').value;
     const amount = parseFloat(document.getElementById('advanceAmount').value);
     const reason = document.getElementById('advanceReason').value.trim();
-    if (!workerId || !date || !amount) { alert('Please fill all required fields'); return; }
+    if (!workerId || !date || !amount) { alert('Fill all fields'); return; }
     if (amount <= 0) { alert('Enter valid amount'); return; }
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
@@ -2607,7 +2512,7 @@ function updateAdvance() {
     const date = document.getElementById('advanceDate').value;
     const amount = parseFloat(document.getElementById('advanceAmount').value);
     const reason = document.getElementById('advanceReason').value.trim();
-    if (!workerId || !date || !amount) { alert('Please fill all required fields'); return; }
+    if (!workerId || !date || !amount) { alert('Fill all fields'); return; }
     if (amount <= 0) { alert('Enter valid amount'); return; }
     const r = data.advances.find(a => a.id == id);
     if (r) {
@@ -2618,7 +2523,7 @@ function updateAdvance() {
         saveToStorage();
         loadAdvances();
         triggerAutoSave('Advance updated');
-        alert('✅ Advance updated!');
+        alert('✅ Updated!');
     }
 }
 
@@ -2631,7 +2536,7 @@ function deleteAdvance() {
     saveToStorage();
     loadAdvances();
     triggerAutoSave('Advance deleted');
-    alert('✅ Advance deleted!');
+    alert('✅ Deleted!');
 }
 
 function clearAdvanceForm() {
@@ -2671,8 +2576,7 @@ function generateSingleReport() {
     const month = parseInt(document.getElementById('singleReportMonth').value);
     const year = parseInt(document.getElementById('singleReportYear').value);
     const worker = data.workers.find(w => w.id == workerId);
-    if (!worker) { alert('Worker not found'); return; }
-    
+    if (!worker) return;
     const records = data.attendance.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -2683,47 +2587,27 @@ function generateSingleReport() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    
     const totalHours = records.reduce((s, r) => s + r.hours, 0);
     const totalOT = records.reduce((s, r) => s + r.overtime, 0);
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
     const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const netPayable = totalSalary - totalAdvance;
-    
     document.getElementById('rWorkers').textContent = '1';
     document.getElementById('rDays').textContent = records.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
-    
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
-    report += `  SINGLE WORKER ATTENDANCE & ADVANCE REPORT\n`;
-    report += `  ${getMonthName(month)} ${year}\n`;
-    report += `  Generated: ${new Date().toLocaleString()}\n`;
+    report += `  SINGLE WORKER REPORT - ${getMonthName(month)} ${year}\n`;
     report += `${'='.repeat(80)}\n\n`;
     report += `👤 ${worker.name} (${worker.department})\n`;
-    report += `   Mobile: ${worker.mobile || 'N/A'}\n`;
-    report += `   Rate: ₹${worker.hourlyRate}/hr | OT: ₹${worker.overtimeRate}/hr\n`;
-    report += `${'-'.repeat(80)}\n\n`;
-    report += `📊 SUMMARY\n`;
-    report += `   Days: ${records.length} | Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)} | Break: ${totalBreak.toFixed(1)}\n`;
-    report += `   Gross Salary: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Net Payable: ₹${netPayable.toFixed(0)}\n`;
-    report += `${'-'.repeat(80)}\n\n`;
-    if (advances.length > 0) {
-        report += `💰 ADVANCES\n`;
-        advances.forEach(a => report += `   ${a.date} | ₹${a.amount.toFixed(0)} | ${a.reason || 'No reason'}\n`);
-        report += `\n`;
-    }
-    report += `📋 DAILY ATTENDANCE\n`;
-    report += `${'Date'.padEnd(14)} ${'In'.padEnd(8)} ${'Out'.padEnd(8)} ${'Hours'.padEnd(8)} ${'OT'.padEnd(8)} ${'Status'.padEnd(12)} ${'Salary'.padEnd(10)}\n`;
+    report += `   Mobile: ${worker.mobile || 'N/A'} | Rate: ₹${worker.hourlyRate}/hr\n`;
     report += `${'-'.repeat(80)}\n`;
-    records.forEach(r => {
-        report += `${r.date.padEnd(14)} ${(r.checkIn || '-').padEnd(8)} ${(r.checkOut || '-').padEnd(8)} `;
-        report += `${r.hours.toFixed(1).padEnd(8)} ${r.overtime.toFixed(1).padEnd(8)} ${r.status.padEnd(12)} ₹${r.salary.toFixed(0).padEnd(10)}\n`;
-    });
+    report += `Days: ${records.length} | Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
+    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
 }
@@ -2731,7 +2615,6 @@ function generateSingleReport() {
 function generateAllReport() {
     const month = parseInt(document.getElementById('reportMonth').value);
     const year = parseInt(document.getElementById('reportYear').value);
-    
     const records = data.attendance.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -2742,89 +2625,26 @@ function generateAllReport() {
         const d = new Date(a.date);
         return d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    
     const workers = new Set(records.map(r => r.workerId)).size;
     const totalHours = records.reduce((s, r) => s + r.hours, 0);
     const totalOT = records.reduce((s, r) => s + r.overtime, 0);
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
-    const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
-    
     document.getElementById('rWorkers').textContent = workers;
     document.getElementById('rDays').textContent = records.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
-    
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
-    report += `  MONTHLY ATTENDANCE & ADVANCE REPORT - ALL WORKERS\n`;
-    report += `  ${getMonthName(month)} ${year}\n`;
-    report += `  Generated: ${new Date().toLocaleString()}\n`;
+    report += `  ALL WORKERS REPORT - ${getMonthName(month)} ${year}\n`;
     report += `${'='.repeat(80)}\n\n`;
-    
-    const groups = {};
-    records.forEach(r => {
-        if (!groups[r.workerId]) {
-            const w = data.workers.find(x => x.id === r.workerId);
-            groups[r.workerId] = {
-                name: w ? w.name : 'Unknown',
-                dept: w ? w.department : 'Unknown',
-                mobile: w ? w.mobile || 'N/A' : 'N/A',
-                days: [],
-                advances: advances.filter(a => a.workerId == r.workerId)
-            };
-        }
-        groups[r.workerId].days.push(r);
-    });
-    
-    Object.keys(groups).forEach(id => {
-        const g = groups[id];
-        const totalH = g.days.reduce((s, d) => s + d.hours, 0);
-        const totalO = g.days.reduce((s, d) => s + d.overtime, 0);
-        const totalS = g.days.reduce((s, d) => s + d.salary, 0);
-        const totalB = g.days.reduce((s, d) => s + (d.breakHours || 0), 0);
-        const totalA = g.advances.reduce((s, a) => s + a.amount, 0);
-        const net = totalS - totalA;
-        report += `👤 ${g.name} (${g.dept}) | 📱 ${g.mobile}\n`;
-        report += `   Days: ${g.days.length} | Hours: ${totalH.toFixed(1)} | OT: ${totalO.toFixed(1)} | Break: ${totalB.toFixed(1)}\n`;
-        report += `   Salary: ₹${totalS.toFixed(0)} | Advance: ₹${totalA.toFixed(0)} | Net: ₹${net.toFixed(0)}\n`;
-        if (g.advances.length > 0) {
-            report += `   Advances: `;
-            g.advances.forEach(a => report += `${a.date} ₹${a.amount.toFixed(0)}; `);
-            report += `\n`;
-        }
-        report += `\n`;
-    });
-    
-    report += `${'='.repeat(80)}\n`;
-    report += `GRAND TOTAL\n`;
-    report += `   Workers: ${workers} | Days: ${records.length} | Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
-    report += `   Gross Salary: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
+    report += `Workers: ${workers} | Days: ${records.length}\n`;
+    report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
+    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
-}
-
-function exportSingleReport() {
-    const content = document.getElementById('reportContent').textContent;
-    if (!content || content.includes('Select worker')) { alert('Generate report first'); return; }
-    const blob = new Blob([content], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'report.txt';
-    link.click();
-}
-
-function exportAllReport() {
-    const content = document.getElementById('reportContent').textContent;
-    if (!content || content.includes('Select month')) { alert('Generate report first'); return; }
-    const blob = new Blob([content], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'report_all.txt';
-    link.click();
 }
 
 function getMonthName(m) {
@@ -2832,18 +2652,15 @@ function getMonthName(m) {
 }
 
 // ============================================
-// EXCEL FUNCTIONS
+// EXCEL EXPORTS
 // ============================================
-function downloadExcel() {
-    saveAllData();
-}
+function downloadExcel() { saveAllData(); }
 
 function exportAttendanceOnly() {
     const wb = XLSX.utils.book_new();
     const data2 = [['ID','Worker','Date','In','Out','Break','Hours','OT','Status','Salary']];
     data.attendance.forEach(a => data2.push([a.id, a.workerName, a.date, a.checkIn, a.checkOut, a.breakHours||0, a.hours, a.overtime, a.status, a.salary]));
-    const ws = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data2), 'Attendance');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     const link = document.createElement('a');
@@ -2856,8 +2673,7 @@ function exportWorkersOnly() {
     const wb = XLSX.utils.book_new();
     const data2 = [['ID','Name','Department','Mobile','Hourly Rate','OT Rate']];
     data.workers.forEach(w => data2.push([w.id, w.name, w.department, w.mobile||'', w.hourlyRate, w.overtimeRate]));
-    const ws = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(wb, ws, 'Workers');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data2), 'Workers');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     const link = document.createElement('a');
@@ -2870,8 +2686,7 @@ function exportAdvancesOnly() {
     const wb = XLSX.utils.book_new();
     const data2 = [['ID','Worker','Date','Amount','Reason']];
     data.advances.forEach(a => data2.push([a.id, a.workerName, a.date, a.amount, a.reason||'']));
-    const ws = XLSX.utils.aoa_to_sheet(data2);
-    XLSX.utils.book_append_sheet(wb, ws, 'Advances');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data2), 'Advances');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     const link = document.createElement('a');
