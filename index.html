@@ -9,11 +9,8 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230984e3'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%91%B7%3C/text%3E%3C/svg%3E">
     <meta name="theme-color" content="#0984e3">
     
-    <!-- ✅ XLSX Library (Excel) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- ✅ jsPDF Library (PDF Generation) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- ✅ jsPDF AutoTable (for tables in PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
     <style>
@@ -160,6 +157,8 @@
         table td { padding: 8px 12px; border-bottom: 1px solid #f1f3f5; }
         table tr:hover { background: #f8f9fa; cursor: pointer; }
         table tr.selected { background: #e3f2fd; border-left: 3px solid #0984e3; }
+        table tr.absent-row { background: #fff5f5 !important; }
+        table tr.absent-row td { color: #c0392b; }
 
         .badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; display: inline-block; }
         .badge-present { background: #d4edda; color: #155724; }
@@ -279,7 +278,6 @@
         }
         .upload-excel-btn:hover { background: #0873c7; }
 
-        /* WhatsApp Modal */
         .whatsapp-modal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 9999;
@@ -319,14 +317,6 @@
             padding: 15px 20px; border-top: 1px solid #e9ecef;
             display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
         }
-
-        /* PDF Options */
-        .pdf-options {
-            background: #fff5f5; padding: 12px; border-radius: 8px;
-            border-left: 4px solid #e74c3c; margin: 10px 0;
-        }
-        .pdf-options .title { font-weight: 600; color: #c0392b; font-size: 14px; margin-bottom: 8px; }
-        .pdf-options .desc { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
 
         .pdf-info-box {
             background: #e8f4fd; padding: 12px; border-radius: 8px;
@@ -449,58 +439,71 @@
                         <label>Date *</label>
                         <input type="date" id="attDate" required>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Check In</label>
-                            <input type="time" id="attIn" value="09:00">
-                        </div>
-                        <div class="form-group">
-                            <label>Check Out</label>
-                            <input type="time" id="attOut" value="18:00">
-                        </div>
-                    </div>
-                    
-                    <div class="break-section">
-                        <div class="title">☕ Break / Lunch Timing</div>
-                        <div class="form-row-3">
-                            <div class="form-group">
-                                <label>Break Start</label>
-                                <input type="time" id="breakStart" value="13:00">
-                            </div>
-                            <div class="form-group">
-                                <label>Break End</label>
-                                <input type="time" id="breakEnd" value="14:00">
-                            </div>
-                            <div class="form-group">
-                                <label>Break Hours</label>
-                                <input type="number" id="breakHours" step="0.5" readonly style="background:#f8f9fa;">
-                            </div>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="includeBreak" checked>
-                            <label>Include break deduction</label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Net Hours</label>
-                            <input type="number" id="attHours" step="0.5" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>Overtime</label>
-                            <input type="number" id="attOT" step="0.5" readonly>
-                        </div>
-                    </div>
-                    
+
                     <div class="form-group">
-                        <label>Break Deducted</label>
-                        <input type="text" id="breakDeducted" readonly style="background:#f8f9fa;color:#0984e3;font-weight:500;">
+                        <label>Status *</label>
+                        <select id="attStatus">
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Half Day">Half Day</option>
+                            <option value="Leave">Leave</option>
+                        </select>
                     </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="autoCalc" checked>
-                        <label>Auto-calculate hours</label>
+
+                    <div id="timeFields">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Check In</label>
+                                <input type="time" id="attIn" value="08:00">
+                            </div>
+                            <div class="form-group">
+                                <label>Check Out</label>
+                                <input type="time" id="attOut" value="20:00">
+                            </div>
+                        </div>
+                        
+                        <div class="break-section">
+                            <div class="title">☕ Break / Lunch Timing</div>
+                            <div class="form-row-3">
+                                <div class="form-group">
+                                    <label>Break Start</label>
+                                    <input type="time" id="breakStart" value="13:00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Break End</label>
+                                    <input type="time" id="breakEnd" value="14:00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Break Hours</label>
+                                    <input type="number" id="breakHours" step="0.5" readonly style="background:#f8f9fa;">
+                                </div>
+                            </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="includeBreak" checked>
+                                <label>Include break deduction</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Net Hours</label>
+                                <input type="number" id="attHours" step="0.5" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Overtime (after 8 hrs)</label>
+                                <input type="number" id="attOT" step="0.5" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Break Deducted</label>
+                            <input type="text" id="breakDeducted" readonly style="background:#f8f9fa;color:#0984e3;font-weight:500;">
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="autoCalc" checked>
+                            <label>Auto-calculate hours</label>
+                        </div>
                     </div>
                     
                     <div class="btn-group">
@@ -668,7 +671,7 @@
         </div>
     </div>
 
-    <!-- TAB 4: BONUSES (NEW) -->
+    <!-- TAB 4: BONUSES -->
     <div id="tab-bonuses" class="tab-content">
         <div class="row">
             <div class="card">
@@ -826,7 +829,7 @@
             
             <div class="stats-grid-6" id="reportStats">
                 <div class="stat-card"><div class="num" id="rWorkers">0</div><div class="label">Workers</div></div>
-                <div class="stat-card"><div class="num" id="rDays">0</div><div class="label">Days</div></div>
+                <div class="stat-card"><div class="num" id="rDays">0</div><div class="label">Working Days</div></div>
                 <div class="stat-card"><div class="num" id="rHours">0</div><div class="label">Hours</div></div>
                 <div class="stat-card"><div class="num" id="rOT">0</div><div class="label">OT</div></div>
                 <div class="stat-card"><div class="num" id="rSalary">0</div><div class="label">Gross Salary</div></div>
@@ -836,6 +839,8 @@
             
             <div class="pdf-info-box">
                 📱 <strong>PDF on WhatsApp:</strong> PDF download hoga + WhatsApp chat khulega. Bas <strong>attach icon (📎)</strong> dabakar PDF select karein aur send karein.
+                <br><br>
+                ℹ️ <strong>Note:</strong> Absent records attendance table me dikhenge lekin working days, hours, salary aur report me count nahi honge.
             </div>
             
             <div class="report-box" id="reportContent">Select worker and month, then click Generate</div>
@@ -981,7 +986,6 @@ let data = {
     currentFileName: ''
 };
 
-// WhatsApp modal state
 let waCurrentWorkerId = null;
 let waCurrentReportType = null;
 let waPendingPDF = null;
@@ -1049,7 +1053,6 @@ async function restoreFolder() {
         if (!handle) return false;
         
         const permission = await handle.queryPermission({ mode: 'readwrite' });
-        console.log('📁 Folder permission status:', permission);
         
         if (permission === 'granted') {
             data.folderHandle = handle;
@@ -1271,12 +1274,16 @@ async function saveAllData() {
         const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
         const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
         const totalBonus = data.bonuses.reduce((s, b) => s + b.amount, 0);
+        const totalWorkingDays = data.attendance.filter(a => a.status !== 'Absent').length;
+        const totalAbsent = data.attendance.filter(a => a.status === 'Absent').length;
         const cData = [
             ['=== ATTENDANCE SYSTEM SUMMARY ==='],[''],
             ['Company Name', data.companyName],
             ['Generated', new Date().toLocaleString()],[''],
             ['Total Workers', data.workers.length],
             ['Total Attendance Records', data.attendance.length],
+            ['Total Working Days', totalWorkingDays],
+            ['Total Absent Days', totalAbsent],
             ['Total Advances', data.advances.length],
             ['Total Bonuses', data.bonuses.length],
             ['Total Gross Salary', '₹' + totalSalary.toFixed(0)],
@@ -1447,6 +1454,10 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         }).sort((a, b) => new Date(a.date) - new Date(b.date));
         
+        // ✅ Separate Present and Absent
+        const presentRecords = records.filter(r => r.status !== 'Absent');
+        const absentRecords = records.filter(r => r.status === 'Absent');
+        
         const advances = data.advances.filter(a => {
             if (!a.date) return false;
             const d = new Date(a.date);
@@ -1459,10 +1470,11 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         });
         
-        const totalHours = records.reduce((s, r) => s + r.hours, 0);
-        const totalOT = records.reduce((s, r) => s + r.overtime, 0);
-        const totalSalary = records.reduce((s, r) => s + r.salary, 0);
-        const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
+        // ✅ Only present records count in totals
+        const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
+        const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
+        const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
+        const totalBreak = presentRecords.reduce((s, r) => s + (r.breakHours || 0), 0);
         const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
         const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
         const netPayable = totalSalary - totalAdvance + totalBonus;
@@ -1528,8 +1540,8 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         doc.setFont('helvetica', 'normal');
         
         const summaryData = [
-            ['Total Days', String(records.length), 'Total Hours', totalHours.toFixed(1)],
-            ['Overtime Hours', totalOT.toFixed(1), 'Break Hours', totalBreak.toFixed(1)],
+            ['Working Days', String(presentRecords.length), 'Absent Days', String(absentRecords.length)],
+            ['Total Hours', totalHours.toFixed(1), 'Overtime Hours', totalOT.toFixed(1)],
             ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Advance Taken', 'Rs. ' + totalAdvance.toFixed(0)],
             ['Bonus Given', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
         ];
@@ -1584,10 +1596,11 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             y = doc.lastAutoTable.finalY + 10;
         }
         
+        // ✅ Daily Attendance - All records including absent
         if (records.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('Daily Attendance', 14, y);
+            doc.text('Daily Attendance (All Records)', 14, y);
             y += 4;
             
             const attData = records.map(r => [
@@ -1608,7 +1621,14 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
                 theme: 'grid',
                 headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 9 },
                 styles: { fontSize: 9, cellPadding: 2.5 },
-                alternateRowStyles: { fillColor: [248, 249, 250] }
+                alternateRowStyles: { fillColor: [248, 249, 250] },
+                didParseCell: function(data) {
+                    // Highlight absent rows
+                    if (data.section === 'body' && data.column.index === 6 && data.cell.raw === 'Absent') {
+                        data.cell.styles.textColor = [192, 57, 43];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
             });
             y = doc.lastAutoTable.finalY + 10;
         }
@@ -1657,12 +1677,16 @@ function generateAllWorkersPDF(month, year) {
             return d.getMonth() === month - 1 && d.getFullYear() === year;
         });
         
-        const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+        // ✅ Only non-absent records count
+        const presentRecords = records.filter(r => r.status !== 'Absent');
+        const absentCount = records.filter(r => r.status === 'Absent').length;
+        
+        const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
         const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
         const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
         const netPayable = totalSalary - totalAdvance + totalBonus;
-        const totalHours = records.reduce((s, r) => s + r.hours, 0);
-        const totalOT = records.reduce((s, r) => s + r.overtime, 0);
+        const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
+        const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
         
         const monthName = getMonthName(month);
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -1694,10 +1718,11 @@ function generateAllWorkersPDF(month, year) {
             startY: y,
             head: [],
             body: [
-                ['Total Workers', String(new Set(records.map(r => r.workerId)).size), 'Total Days', String(records.length)],
-                ['Total Hours', totalHours.toFixed(1), 'Total OT', totalOT.toFixed(1)],
-                ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Total Advance', 'Rs. ' + totalAdvance.toFixed(0)],
-                ['Total Bonus', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
+                ['Total Workers', String(new Set(presentRecords.map(r => r.workerId)).size), 'Working Days', String(presentRecords.length)],
+                ['Total Absent', String(absentCount), 'Total Hours', totalHours.toFixed(1)],
+                ['Total OT', totalOT.toFixed(1), 'Gross Salary', 'Rs. ' + totalSalary.toFixed(0)],
+                ['Total Advance', 'Rs. ' + totalAdvance.toFixed(0), 'Total Bonus', 'Rs. ' + totalBonus.toFixed(0)],
+                ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
             ],
             theme: 'grid',
             styles: { fontSize: 10, cellPadding: 3 },
@@ -1714,20 +1739,35 @@ function generateAllWorkersPDF(month, year) {
         y += 4;
         
         const workerMap = {};
-        records.forEach(r => {
+        // Only count present records for worker summary
+        presentRecords.forEach(r => {
             if (!workerMap[r.workerId]) {
                 const w = data.workers.find(x => x.id === r.workerId);
                 workerMap[r.workerId] = {
                     name: w ? w.name : 'Unknown',
                     dept: w ? w.department : '-',
                     mobile: w ? w.mobile || '-' : '-',
-                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0
+                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0, absent: 0
                 };
             }
             workerMap[r.workerId].days++;
             workerMap[r.workerId].hours += r.hours;
             workerMap[r.workerId].ot += r.overtime;
             workerMap[r.workerId].salary += r.salary;
+        });
+        
+        // Count absent days per worker
+        records.filter(r => r.status === 'Absent').forEach(r => {
+            if (!workerMap[r.workerId]) {
+                const w = data.workers.find(x => x.id === r.workerId);
+                workerMap[r.workerId] = {
+                    name: w ? w.name : 'Unknown',
+                    dept: w ? w.department : '-',
+                    mobile: w ? w.mobile || '-' : '-',
+                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0, absent: 0
+                };
+            }
+            workerMap[r.workerId].absent++;
         });
         
         advances.forEach(a => {
@@ -1739,7 +1779,7 @@ function generateAllWorkersPDF(month, year) {
         });
         
         const workerTableData = Object.values(workerMap).map(w => [
-            w.name, w.dept, String(w.days), w.hours.toFixed(1),
+            w.name, w.dept, String(w.days), String(w.absent), w.hours.toFixed(1),
             w.ot.toFixed(1), 'Rs. ' + w.salary.toFixed(0),
             'Rs. ' + w.advance.toFixed(0),
             'Rs. ' + w.bonus.toFixed(0),
@@ -1748,11 +1788,11 @@ function generateAllWorkersPDF(month, year) {
         
         doc.autoTable({
             startY: y,
-            head: [['Name','Department','Days','Hours','OT','Salary','Advance','Bonus','Net']],
+            head: [['Name','Dept','Work Days','Absent','Hours','OT','Salary','Advance','Bonus','Net']],
             body: workerTableData,
             theme: 'grid',
-            headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+            styles: { fontSize: 7, cellPadding: 1.5 },
             alternateRowStyles: { fillColor: [248, 249, 250] }
         });
         
@@ -1806,6 +1846,8 @@ function openWhatsAppForWorkerPDF(workerId) {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const presentRecords = records.filter(r => r.status !== 'Absent');
+    const absentRecords = records.filter(r => r.status === 'Absent');
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -1816,7 +1858,7 @@ function openWhatsAppForWorkerPDF(workerId) {
         const d = new Date(b.date);
         return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     const netPayable = totalSalary - totalAdvance + totalBonus;
@@ -1828,7 +1870,8 @@ function openWhatsAppForWorkerPDF(workerId) {
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
         `*📊 Summary:*\n` +
-        `• Total Days: *${records.length}*\n` +
+        `• Working Days: *${presentRecords.length}*\n` +
+        `• Absent Days: *${absentRecords.length}*\n` +
         `• Net Payable: *₹${netPayable.toFixed(0)}*\n\n` +
         `_Kripya PDF file check karein._\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -1865,6 +1908,8 @@ function sendSingleReportPDFWhatsApp() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const presentRecords = records.filter(r => r.status !== 'Absent');
+    const absentRecords = records.filter(r => r.status === 'Absent');
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -1875,7 +1920,7 @@ function sendSingleReportPDFWhatsApp() {
         const d = new Date(b.date);
         return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     const netPayable = totalSalary - totalAdvance + totalBonus;
@@ -1887,7 +1932,8 @@ function sendSingleReportPDFWhatsApp() {
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
         `*📊 Summary:*\n` +
-        `• Total Days: *${records.length}*\n` +
+        `• Working Days: *${presentRecords.length}*\n` +
+        `• Absent Days: *${absentRecords.length}*\n` +
         `• Gross Salary: *₹${totalSalary.toFixed(0)}*\n` +
         `• Advance: *₹${totalAdvance.toFixed(0)}*\n` +
         `• Bonus: *₹${totalBonus.toFixed(0)}*\n` +
@@ -1938,13 +1984,14 @@ function sendAllReportPDFWhatsApp() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    const presentRecords = records.filter(r => r.status !== 'Absent');
+    const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
     
     const message = `*${data.companyName.toUpperCase()}*\n` +
         `*📋 ${getMonthName(month)} ${year} Report*\n\n` +
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly report PDF mein attach hai.\n\n` +
-        `• Days: *${records.length}*\n` +
+        `• Working Days: *${presentRecords.length}*\n` +
         `• Gross: *₹${totalSalary.toFixed(0)}*\n\n` +
         `_${data.companyName}_`;
     
@@ -2020,7 +2067,7 @@ function sendWhatsAppPDF() {
 }
 
 // ============================================
-// OLD WhatsApp Text Functions (kept as fallback)
+// UTILITY FUNCTIONS
 // ============================================
 function formatWhatsAppNumber(mobile) {
     let num = mobile.replace(/\D/g, '');
@@ -2087,6 +2134,7 @@ function init() {
     loadBonuses();
     initDateFields();
     updateLastSaveTime();
+    setupStatusToggle();
     
     const folderName = localStorage.getItem('folderName');
     if (folderName) {
@@ -2109,6 +2157,30 @@ function init() {
     }
     
     setTimeout(() => { restoreFolder(); }, 300);
+}
+
+// ✅ Status change handler - hide/show time fields for Absent
+function setupStatusToggle() {
+    const statusSelect = document.getElementById('attStatus');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', toggleTimeFields);
+        toggleTimeFields(); // initial
+    }
+}
+
+function toggleTimeFields() {
+    const status = document.getElementById('attStatus').value;
+    const timeFields = document.getElementById('timeFields');
+    if (status === 'Absent' || status === 'Leave') {
+        timeFields.style.display = 'none';
+        document.getElementById('attHours').value = '0';
+        document.getElementById('attOT').value = '0';
+        document.getElementById('breakHours').value = '0';
+        document.getElementById('breakDeducted').value = 'Absent - No hours';
+    } else {
+        timeFields.style.display = 'block';
+        calculateHours();
+    }
 }
 
 function loadFromStorage() {
@@ -2169,8 +2241,18 @@ function setupAutoCalculate() {
     document.getElementById('autoCalc').addEventListener('change', calculateHours);
 }
 
+// ✅ Duty time: 8 AM to 8 PM (12 hours shift), 8 hours duty + 4 hours OT
 function calculateHours() {
     if (!document.getElementById('autoCalc').checked) return;
+    const status = document.getElementById('attStatus').value;
+    if (status === 'Absent' || status === 'Leave') {
+        document.getElementById('attHours').value = '0';
+        document.getElementById('attOT').value = '0';
+        document.getElementById('breakHours').value = '0';
+        document.getElementById('breakDeducted').value = 'Absent - No hours';
+        return;
+    }
+    
     const inTime = document.getElementById('attIn').value;
     const outTime = document.getElementById('attOut').value;
     if (!inTime || !outTime) return;
@@ -2200,6 +2282,7 @@ function calculateHours() {
         
         let netHours = totalHours - breakHours;
         if (netHours < 0) netHours = 0;
+        // ✅ Overtime after 8 hours duty
         let overtime = netHours > 8 ? netHours - 8 : 0;
         
         document.getElementById('breakHours').value = breakHours.toFixed(1);
@@ -2429,13 +2512,14 @@ function loadAttendance() {
     }
     tbody.innerHTML = records.map((r, i) => {
         const worker = data.workers.find(w => w.id === r.workerId);
-        return `<tr onclick="editAttendance(${r.id})" data-attendance-id="${r.id}">
+        const isAbsent = r.status === 'Absent';
+        return `<tr onclick="editAttendance(${r.id})" data-attendance-id="${r.id}" class="${isAbsent ? 'absent-row' : ''}">
             <td>${i+1}</td><td>${r.date}</td><td>${r.workerName}</td>
             <td>${worker ? worker.department : '-'}</td><td>${worker ? worker.mobile || '-' : '-'}</td>
             <td>${r.checkIn || '-'}</td><td>${r.checkOut || '-'}</td>
             <td>${r.hours.toFixed(1)}</td><td>${r.overtime.toFixed(1)}</td>
             <td>${r.breakHours ? r.breakHours + 'h' : '-'}</td>
-            <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+            <td><span class="badge badge-${r.status.toLowerCase().replace(' ', '-')}">${r.status}</span></td>
             <td>₹${r.salary.toFixed(0)}</td>
         </tr>`;
     }).join('');
@@ -2450,8 +2534,9 @@ function editAttendance(id) {
     document.getElementById('editAttId').value = r.id;
     document.getElementById('attWorker').value = r.workerId;
     document.getElementById('attDate').value = r.date;
-    document.getElementById('attIn').value = r.checkIn || '09:00';
-    document.getElementById('attOut').value = r.checkOut || '18:00';
+    document.getElementById('attStatus').value = r.status || 'Present';
+    document.getElementById('attIn').value = r.checkIn || '08:00';
+    document.getElementById('attOut').value = r.checkOut || '20:00';
     document.getElementById('breakStart').value = r.breakStart || '13:00';
     document.getElementById('breakEnd').value = r.breakEnd || '14:00';
     document.getElementById('breakHours').value = r.breakHours || 0;
@@ -2468,23 +2553,29 @@ function editAttendance(id) {
         tr.classList.remove('selected');
         if (tr.dataset.attendanceId == id) tr.classList.add('selected');
     });
+    toggleTimeFields();
 }
 
 function saveAttendance() {
     const workerId = parseInt(document.getElementById('attWorker').value);
     const date = document.getElementById('attDate').value;
-    const checkIn = document.getElementById('attIn').value;
-    const checkOut = document.getElementById('attOut').value;
-    const breakStart = document.getElementById('breakStart').value;
-    const breakEnd = document.getElementById('breakEnd').value;
-    const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
-    const hours = parseFloat(document.getElementById('attHours').value) || 0;
-    const overtime = parseFloat(document.getElementById('attOT').value) || 0;
+    const status = document.getElementById('attStatus').value;
+    const isAbsent = status === 'Absent' || status === 'Leave';
+    
+    const checkIn = isAbsent ? '' : document.getElementById('attIn').value;
+    const checkOut = isAbsent ? '' : document.getElementById('attOut').value;
+    const breakStart = isAbsent ? '' : document.getElementById('breakStart').value;
+    const breakEnd = isAbsent ? '' : document.getElementById('breakEnd').value;
+    const breakHours = isAbsent ? 0 : (parseFloat(document.getElementById('breakHours').value) || 0);
+    const hours = isAbsent ? 0 : (parseFloat(document.getElementById('attHours').value) || 0);
+    const overtime = isAbsent ? 0 : (parseFloat(document.getElementById('attOT').value) || 0);
+    
     if (!workerId || !date) { alert('Select worker and date'); return; }
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
-    const salary = (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
-    const status = hours === 0 ? 'Absent' : (overtime > 0 ? 'Overtime' : 'Present');
+    
+    const salary = isAbsent ? 0 : (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
+    
     data.attendance.push({
         id: data.nextAttId++, workerId, workerName: worker.name, date, checkIn, checkOut,
         breakStart, breakEnd, breakHours, hours, overtime, status, salary
@@ -2501,13 +2592,17 @@ function updateAttendance() {
     if (!id) { alert('No record selected'); return; }
     const workerId = parseInt(document.getElementById('attWorker').value);
     const date = document.getElementById('attDate').value;
-    const checkIn = document.getElementById('attIn').value;
-    const checkOut = document.getElementById('attOut').value;
-    const breakStart = document.getElementById('breakStart').value;
-    const breakEnd = document.getElementById('breakEnd').value;
-    const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
-    const hours = parseFloat(document.getElementById('attHours').value) || 0;
-    const overtime = parseFloat(document.getElementById('attOT').value) || 0;
+    const status = document.getElementById('attStatus').value;
+    const isAbsent = status === 'Absent' || status === 'Leave';
+    
+    const checkIn = isAbsent ? '' : document.getElementById('attIn').value;
+    const checkOut = isAbsent ? '' : document.getElementById('attOut').value;
+    const breakStart = isAbsent ? '' : document.getElementById('breakStart').value;
+    const breakEnd = isAbsent ? '' : document.getElementById('breakEnd').value;
+    const breakHours = isAbsent ? 0 : (parseFloat(document.getElementById('breakHours').value) || 0);
+    const hours = isAbsent ? 0 : (parseFloat(document.getElementById('attHours').value) || 0);
+    const overtime = isAbsent ? 0 : (parseFloat(document.getElementById('attOT').value) || 0);
+    
     if (!workerId || !date) { alert('Select worker and date'); return; }
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
@@ -2516,9 +2611,8 @@ function updateAttendance() {
         r.workerId = workerId; r.workerName = worker.name; r.date = date;
         r.checkIn = checkIn; r.checkOut = checkOut;
         r.breakStart = breakStart; r.breakEnd = breakEnd; r.breakHours = breakHours;
-        r.hours = hours; r.overtime = overtime;
-        r.status = hours === 0 ? 'Absent' : (overtime > 0 ? 'Overtime' : 'Present');
-        r.salary = (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
+        r.hours = hours; r.overtime = overtime; r.status = status;
+        r.salary = isAbsent ? 0 : (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
         clearAttForm();
         saveToStorage();
         loadAttendance();
@@ -2542,8 +2636,9 @@ function deleteAttendance() {
 function clearAttForm() {
     document.getElementById('editAttId').value = '';
     document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('attIn').value = '09:00';
-    document.getElementById('attOut').value = '18:00';
+    document.getElementById('attStatus').value = 'Present';
+    document.getElementById('attIn').value = '08:00';
+    document.getElementById('attOut').value = '20:00';
     document.getElementById('breakStart').value = '13:00';
     document.getElementById('breakEnd').value = '14:00';
     document.getElementById('breakHours').value = '';
@@ -2557,6 +2652,7 @@ function clearAttForm() {
     document.getElementById('updateAttBtn').style.display = 'none';
     document.getElementById('cancelEditBtn').style.display = 'none';
     document.querySelectorAll('#attendanceTable tr').forEach(tr => tr.classList.remove('selected'));
+    toggleTimeFields();
 }
 
 function cancelEdit() { clearAttForm(); alert('Edit cancelled'); }
@@ -2565,10 +2661,13 @@ function showWorkerSummary(id) {
     const worker = data.workers.find(w => w.id === id);
     if (!worker) return;
     const att = data.attendance.filter(a => a.workerId === id);
-    const totalHours = att.reduce((s, a) => s + a.hours, 0);
-    const totalOT = att.reduce((s, a) => s + a.overtime, 0);
-    const totalSalary = att.reduce((s, a) => s + a.salary, 0);
-    const totalBreak = att.reduce((s, a) => s + (a.breakHours || 0), 0);
+    // ✅ Only count non-absent records
+    const presentAtt = att.filter(a => a.status !== 'Absent');
+    const absentAtt = att.filter(a => a.status === 'Absent');
+    const totalHours = presentAtt.reduce((s, a) => s + a.hours, 0);
+    const totalOT = presentAtt.reduce((s, a) => s + a.overtime, 0);
+    const totalSalary = presentAtt.reduce((s, a) => s + a.salary, 0);
+    const totalBreak = presentAtt.reduce((s, a) => s + (a.breakHours || 0), 0);
     const advances = data.advances.filter(a => a.workerId === id);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const bonuses = data.bonuses.filter(b => b.workerId === id);
@@ -2579,10 +2678,10 @@ function showWorkerSummary(id) {
         <div style="color:#6c757d;font-size:13px;">${worker.department} | 📱 ${worker.mobile || 'N/A'}</div>
         <div style="color:#6c757d;font-size:13px;">₹${worker.hourlyRate}/hr, OT: ₹${worker.overtimeRate}/hr</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:10px;">
-            <div class="stat-card"><div class="num">${att.length}</div><div class="label">Days</div></div>
+            <div class="stat-card"><div class="num" style="color:#00b894;">${presentAtt.length}</div><div class="label">Working Days</div></div>
+            <div class="stat-card"><div class="num" style="color:#e17055;">${absentAtt.length}</div><div class="label">Absent Days</div></div>
             <div class="stat-card"><div class="num">${totalHours.toFixed(1)}</div><div class="label">Hours</div></div>
             <div class="stat-card"><div class="num">${totalOT.toFixed(1)}</div><div class="label">OT</div></div>
-            <div class="stat-card"><div class="num">${totalBreak.toFixed(1)}</div><div class="label">Break</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;border-top:1px solid #e9ecef;padding-top:8px;">
             <div class="stat-card"><div class="num">₹${totalSalary.toFixed(0)}</div><div class="label">Gross Salary</div></div>
@@ -2719,7 +2818,7 @@ function showAdvanceSummary(id) {
 }
 
 // ============================================
-// BONUS FUNCTIONS (NEW)
+// BONUS FUNCTIONS
 // ============================================
 function loadBonuses() {
     const workerId = document.getElementById('bonusWorkerFilter').value;
@@ -2858,6 +2957,10 @@ function generateSingleReport() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    // ✅ Only non-absent for calculation
+    const presentRecords = records.filter(r => r.status !== 'Absent');
+    const absentRecords = records.filter(r => r.status === 'Absent');
+    
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -2868,20 +2971,23 @@ function generateSingleReport() {
         const d = new Date(b.date);
         return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    const totalHours = records.reduce((s, r) => s + r.hours, 0);
-    const totalOT = records.reduce((s, r) => s + r.overtime, 0);
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
-    const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
+    
+    const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
+    const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
+    const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
+    const totalBreak = presentRecords.reduce((s, r) => s + (r.breakHours || 0), 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     const netPayable = totalSalary - totalAdvance + totalBonus;
+    
     document.getElementById('rWorkers').textContent = '1';
-    document.getElementById('rDays').textContent = records.length;
+    document.getElementById('rDays').textContent = presentRecords.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
     document.getElementById('rBonus').textContent = '₹' + totalBonus.toFixed(0);
+    
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
     report += `  SINGLE WORKER REPORT - ${getMonthName(month)} ${year}\n`;
@@ -2889,7 +2995,8 @@ function generateSingleReport() {
     report += `👤 ${worker.name} (${worker.department})\n`;
     report += `   Mobile: ${worker.mobile || 'N/A'} | Rate: ₹${worker.hourlyRate}/hr\n`;
     report += `${'-'.repeat(80)}\n`;
-    report += `Days: ${records.length} | Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
+    report += `Working Days: ${presentRecords.length} | Absent Days: ${absentRecords.length}\n`;
+    report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
     report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
@@ -2903,6 +3010,10 @@ function generateAllReport() {
         const d = new Date(a.date);
         return d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    // ✅ Only non-absent for calculation
+    const presentRecords = records.filter(r => r.status !== 'Absent');
+    const absentCount = records.filter(r => r.status === 'Absent').length;
+    
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -2913,24 +3024,27 @@ function generateAllReport() {
         const d = new Date(b.date);
         return d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    const workers = new Set(records.map(r => r.workerId)).size;
-    const totalHours = records.reduce((s, r) => s + r.hours, 0);
-    const totalOT = records.reduce((s, r) => s + r.overtime, 0);
-    const totalSalary = records.reduce((s, r) => s + r.salary, 0);
+    
+    const workers = new Set(presentRecords.map(r => r.workerId)).size;
+    const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
+    const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
+    const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+    
     document.getElementById('rWorkers').textContent = workers;
-    document.getElementById('rDays').textContent = records.length;
+    document.getElementById('rDays').textContent = presentRecords.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
     document.getElementById('rBonus').textContent = '₹' + totalBonus.toFixed(0);
+    
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
     report += `  ALL WORKERS REPORT - ${getMonthName(month)} ${year}\n`;
     report += `${'='.repeat(80)}\n\n`;
-    report += `Workers: ${workers} | Days: ${records.length}\n`;
+    report += `Workers: ${workers} | Working Days: ${presentRecords.length} | Absent: ${absentCount}\n`;
     report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
     report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
