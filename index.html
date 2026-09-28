@@ -92,6 +92,7 @@
         .badge-folder { background: #6c5ce7; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-wa { background: #25D366; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-pdf { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+        .badge-bonus { background: #00b894; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label {
@@ -131,6 +132,8 @@
         .btn-info:hover { background: #5a9fd6; }
         .btn-advance { background: #e17055; color: white; }
         .btn-advance:hover { background: #d63031; }
+        .btn-bonus { background: #00b894; color: white; }
+        .btn-bonus:hover { background: #00a381; }
         .btn-folder { background: #6c5ce7; color: white; }
         .btn-folder:hover { background: #5a4bd1; }
         .btn-pdf { background: #e74c3c; color: white; }
@@ -218,6 +221,11 @@
             border: 1px solid #b8d4f0; margin: 8px 0;
         }
         .break-section .title { font-weight: 600; font-size: 13px; color: #0984e3; margin-bottom: 5px; }
+        .bonus-section {
+            background: #e8f8f5; padding: 10px 12px; border-radius: 8px;
+            border: 1px solid #b2dfdb; margin: 8px 0;
+        }
+        .bonus-section .title { font-weight: 600; font-size: 13px; color: #00b894; margin-bottom: 5px; }
 
         .folder-box {
             background: #f3f0ff; padding: 20px; border-radius: 12px;
@@ -356,6 +364,7 @@
         <button class="tab active" onclick="showTab('attendance')">📋 Attendance</button>
         <button class="tab" onclick="showTab('workers')">👥 Workers</button>
         <button class="tab" onclick="showTab('advances')">💰 Advances</button>
+        <button class="tab" onclick="showTab('bonuses')">🎁 Bonus</button>
         <button class="tab" onclick="showTab('reports')">📊 Reports</button>
         <button class="tab" onclick="showTab('folder')">📁 Folder</button>
     </div>
@@ -659,15 +668,88 @@
         </div>
     </div>
 
-    <!-- TAB 4: REPORTS -->
+    <!-- TAB 4: BONUSES (NEW) -->
+    <div id="tab-bonuses" class="tab-content">
+        <div class="row">
+            <div class="card">
+                <div class="card-title">🎁 Bonus Records <span class="badge-bonus">Bonus</span></div>
+                <div class="excel-info" style="border-left-color:#00b894; background:#e8f8f5;">
+                    <span>📁 All bonus records</span>
+                    <span id="bonusCount">0 records</span>
+                </div>
+                
+                <div class="worker-select-card">
+                    <span style="font-weight:500;">👤 Filter by Worker:</span>
+                    <select id="bonusWorkerFilter" onchange="loadBonuses()">
+                        <option value="">All Workers</option>
+                    </select>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>#</th><th>Date</th><th>Worker</th><th>Department</th><th>Amount (₹)</th><th>Reason</th><th>Action</th></tr></thead>
+                        <tbody id="bonusTable">
+                            <tr><td colspan="7" class="text-center text-muted">No bonus records</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <span id="bonusFormTitle">Add Bonus</span>
+                        <span class="badge-edit" id="bonusEditBadge" style="display:none;">✏️ Edit Mode</span>
+                    </div>
+                    
+                    <input type="hidden" id="editBonusId">
+                    <div class="form-group">
+                        <label>Worker *</label>
+                        <select id="bonusWorker" required>
+                            <option value="">Select Worker</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="bonusDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (₹) *</label>
+                        <input type="number" id="bonusAmount" placeholder="Enter bonus amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason</label>
+                        <input type="text" id="bonusReason" placeholder="Reason for bonus (optional)">
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-bonus" id="saveBonusBtn" onclick="saveBonus()">🎁 Save Bonus</button>
+                        <button class="btn btn-warning" id="updateBonusBtn" onclick="updateBonus()" style="display:none;">✏️ Update</button>
+                        <button class="btn btn-danger" onclick="deleteBonus()">🗑️ Delete</button>
+                        <button class="btn btn-info" onclick="clearBonusForm()">🔄 Clear</button>
+                        <button class="btn btn-warning" onclick="cancelBonusEdit()" id="cancelBonusEditBtn" style="display:none;">❌ Cancel</button>
+                    </div>
+                </div>
+                
+                <div class="card mt-20">
+                    <div class="card-title">📊 Bonus Summary</div>
+                    <div id="bonusSummary">
+                        <div class="text-muted text-center">Select a worker to see bonus summary</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: REPORTS -->
     <div id="tab-reports" class="tab-content">
         <div class="card">
-            <div class="card-title">📊 Monthly Reports <span class="badge-advance">With Advances</span> <span class="badge-wa">WhatsApp</span> <span class="badge-pdf">PDF</span></div>
+            <div class="card-title">📊 Monthly Reports <span class="badge-advance">With Advances</span> <span class="badge-bonus">With Bonus</span> <span class="badge-wa">WhatsApp</span> <span class="badge-pdf">PDF</span></div>
             
             <div class="report-options">
                 <div class="report-option-card" style="border-color: #0984e3; background: #f0f7ff;">
                     <div class="title">👤 Single Worker Report</div>
-                    <div class="desc">Complete report with attendance, salary & advance deductions</div>
+                    <div class="desc">Complete report with attendance, salary, advance & bonus</div>
                     <div class="form-row" style="margin-bottom: 10px;">
                         <div class="form-group">
                             <label>Select Worker</label>
@@ -708,7 +790,7 @@
                 
                 <div class="report-option-card">
                     <div class="title">📊 All Workers Report</div>
-                    <div class="desc">Complete report for all workers with advance deductions</div>
+                    <div class="desc">Complete report for all workers with advance & bonus deductions</div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Month</label>
@@ -749,6 +831,7 @@
                 <div class="stat-card"><div class="num" id="rOT">0</div><div class="label">OT</div></div>
                 <div class="stat-card"><div class="num" id="rSalary">0</div><div class="label">Gross Salary</div></div>
                 <div class="stat-card"><div class="num num-danger" id="rAdvance">0</div><div class="label">Advance</div></div>
+                <div class="stat-card"><div class="num num-success" id="rBonus">0</div><div class="label">Bonus</div></div>
             </div>
             
             <div class="pdf-info-box">
@@ -759,7 +842,7 @@
         </div>
     </div>
 
-    <!-- TAB 5: PERSONAL FOLDER -->
+    <!-- TAB 6: PERSONAL FOLDER -->
     <div id="tab-folder" class="tab-content">
         <div class="card">
             <div class="card-title">
@@ -776,7 +859,7 @@
             <div class="folder-box">
                 <h4>📁 Select Your Personal Folder</h4>
                 <p>
-                    <strong>Ek baar folder select karein</strong> - uske baad <strong>saara data (Workers + Attendance + Advances)</strong> 
+                    <strong>Ek baar folder select karein</strong> - uske baad <strong>saara data (Workers + Attendance + Advances + Bonuses)</strong> 
                     <strong>ek hi Excel file</strong> mein save hoga. Folder <strong>automatically restore</strong> ho jayega next time.
                 </p>
                 
@@ -792,6 +875,7 @@
                     ✅ Workers Sheet - सभी Workers की List<br>
                     ✅ Attendance Sheet - सभी Attendance Records<br>
                     ✅ Advances Sheet - सभी Advance Records<br>
+                    ✅ Bonuses Sheet - सभी Bonus Records<br>
                     ✅ Summary Sheet - Company Info & Statistics
                 </div>
                 
@@ -810,7 +894,7 @@
             
             <div id="uploadMsg" class="mt-10"></div>
             
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin:15px 0;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:15px;margin:15px 0;">
                 <div>
                     <h4>📥 Download</h4>
                     <button class="btn btn-excel" onclick="downloadExcel()" style="width:100%;">⬇️ Download Excel</button>
@@ -822,8 +906,10 @@
                 </div>
                 <div>
                     <h4>💰 Export</h4>
-                    <button class="btn btn-advance" onclick="exportAdvancesOnly()" style="width:100%;">💰 Advances</button>
+                    <button class="btn btn-advance" onclick="exportAdvancesOnly()" style="width:100%;margin-bottom:5px;">💰 Advances</button>
+                    <button class="btn btn-bonus" onclick="exportBonusesOnly()" style="width:100%;">🎁 Bonuses</button>
                 </div>
+                <div></div>
             </div>
         </div>
     </div>
@@ -883,10 +969,12 @@ let data = {
     workers: [],
     attendance: [],
     advances: [],
+    bonuses: [],
     companyName: 'Sume-Tech',
     nextWorkerId: 1,
     nextAttId: 1,
     nextAdvanceId: 1,
+    nextBonusId: 1,
     lastSaveTime: null,
     folderHandle: null,
     folderName: null,
@@ -896,7 +984,7 @@ let data = {
 // WhatsApp modal state
 let waCurrentWorkerId = null;
 let waCurrentReportType = null;
-let waPendingPDF = null; // stores current PDF blob
+let waPendingPDF = null;
 
 // ============================================
 // INDEXEDDB - Folder Handle Persistence
@@ -1115,11 +1203,26 @@ async function loadExcelFile(fileHandle) {
             if (data.advances.length > 0) data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
         }
         
+        const wsBonuses = workbook.Sheets['Bonuses'];
+        if (wsBonuses) {
+            const rows = XLSX.utils.sheet_to_json(wsBonuses);
+            data.bonuses = [];
+            rows.forEach(r => {
+                data.bonuses.push({
+                    id: r['ID'] || 0, workerId: r['Worker ID'] || 0,
+                    workerName: r['Worker Name'] || '', date: r['Date'] || '',
+                    amount: r['Amount'] || 0, reason: r['Reason'] || ''
+                });
+            });
+            if (data.bonuses.length > 0) data.nextBonusId = Math.max(...data.bonuses.map(a => a.id)) + 1;
+        }
+        
         saveToStorage();
         populateAllDropdowns();
         loadWorkers();
         loadAttendance();
         loadAdvances();
+        loadBonuses();
         showFolderStatus('✅ Data loaded from: ' + fileHandle.name, 'success');
     } catch(err) {
         console.error('Error loading file:', err);
@@ -1161,8 +1264,13 @@ async function saveAllData() {
         data.advances.forEach(a => advData.push([a.id, a.workerId, a.workerName, a.date, a.amount, a.reason||'']));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(advData), 'Advances');
         
+        const bonData = [['ID','Worker ID','Worker Name','Date','Amount','Reason']];
+        data.bonuses.forEach(b => bonData.push([b.id, b.workerId, b.workerName, b.date, b.amount, b.reason||'']));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bonData), 'Bonuses');
+        
         const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
         const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
+        const totalBonus = data.bonuses.reduce((s, b) => s + b.amount, 0);
         const cData = [
             ['=== ATTENDANCE SYSTEM SUMMARY ==='],[''],
             ['Company Name', data.companyName],
@@ -1170,9 +1278,11 @@ async function saveAllData() {
             ['Total Workers', data.workers.length],
             ['Total Attendance Records', data.attendance.length],
             ['Total Advances', data.advances.length],
+            ['Total Bonuses', data.bonuses.length],
             ['Total Gross Salary', '₹' + totalSalary.toFixed(0)],
             ['Total Advances Given', '₹' + totalAdvance.toFixed(0)],
-            ['Net Payable', '₹' + (totalSalary - totalAdvance).toFixed(0)]
+            ['Total Bonus Given', '₹' + totalBonus.toFixed(0)],
+            ['Net Payable', '₹' + (totalSalary - totalAdvance + totalBonus).toFixed(0)]
         ];
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cData), 'Summary');
         
@@ -1244,12 +1354,21 @@ async function uploadExcelFile(event) {
                     }));
                     if (data.advances.length > 0) data.nextAdvanceId = Math.max(...data.advances.map(a => a.id)) + 1;
                 }
+                const wsBonuses = workbook.Sheets['Bonuses'];
+                if (wsBonuses) {
+                    data.bonuses = XLSX.utils.sheet_to_json(wsBonuses).map(r => ({
+                        id: r['ID'] || 0, workerId: r['Worker ID'] || 0, workerName: r['Worker Name'] || '',
+                        date: r['Date'] || '', amount: r['Amount'] || 0, reason: r['Reason'] || ''
+                    }));
+                    if (data.bonuses.length > 0) data.nextBonusId = Math.max(...data.bonuses.map(b => b.id)) + 1;
+                }
                 
                 saveToStorage();
                 populateAllDropdowns();
                 loadWorkers();
                 loadAttendance();
                 loadAdvances();
+                loadBonuses();
                 showFolderStatus('✅ Data loaded from uploaded file!', 'success');
             } catch(err) { showFolderStatus('❌ Error reading file: ' + err.message, 'error'); }
         };
@@ -1314,7 +1433,6 @@ function updateLastSaveTime() {
 // PDF GENERATION
 // ============================================
 
-// ✅ Generate PDF for single worker report
 function generateWorkerPDF(workerId, month, year, options = {}) {
     try {
         const { jsPDF } = window.jspdf;
@@ -1334,18 +1452,24 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             const d = new Date(a.date);
             return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         });
+
+        const bonuses = data.bonuses.filter(b => {
+            if (!b.date) return false;
+            const d = new Date(b.date);
+            return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+        });
         
         const totalHours = records.reduce((s, r) => s + r.hours, 0);
         const totalOT = records.reduce((s, r) => s + r.overtime, 0);
         const totalSalary = records.reduce((s, r) => s + r.salary, 0);
         const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
         const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-        const netPayable = totalSalary - totalAdvance;
+        const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+        const netPayable = totalSalary - totalAdvance + totalBonus;
         
         const monthName = getMonthName(month);
         const pageWidth = doc.internal.pageSize.getWidth();
         
-        // ===== HEADER =====
         doc.setFillColor(9, 132, 227);
         doc.rect(0, 0, pageWidth, 30, 'F');
         
@@ -1363,7 +1487,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         
         doc.setTextColor(0, 0, 0);
         
-        // ===== WORKER DETAILS =====
         let y = 40;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -1394,7 +1517,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         doc.text('Rs. ' + worker.overtimeRate + '/hr', 45, y);
         y += 10;
         
-        // ===== SUMMARY BOX =====
         doc.setFillColor(232, 245, 233);
         doc.rect(14, y, pageWidth - 28, 8, 'F');
         doc.setFontSize(12);
@@ -1405,12 +1527,11 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         
-        // Summary table
         const summaryData = [
             ['Total Days', String(records.length), 'Total Hours', totalHours.toFixed(1)],
             ['Overtime Hours', totalOT.toFixed(1), 'Break Hours', totalBreak.toFixed(1)],
             ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Advance Taken', 'Rs. ' + totalAdvance.toFixed(0)],
-            ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
+            ['Bonus Given', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
         ];
         
         doc.autoTable({
@@ -1427,7 +1548,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         
         y = doc.lastAutoTable.finalY + 10;
         
-        // ===== ADVANCE DETAILS =====
         if (advances.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
@@ -1445,8 +1565,25 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             });
             y = doc.lastAutoTable.finalY + 10;
         }
+
+        if (bonuses.length > 0) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Bonus Details', 14, y);
+            y += 4;
+            
+            const bonData = bonuses.map(b => [b.date, 'Rs. ' + b.amount.toFixed(0), b.reason || '-']);
+            doc.autoTable({
+                startY: y,
+                head: [['Date', 'Amount', 'Reason']],
+                body: bonData,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 184, 148], textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 10, cellPadding: 3 }
+            });
+            y = doc.lastAutoTable.finalY + 10;
+        }
         
-        // ===== DAILY ATTENDANCE =====
         if (records.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
@@ -1476,7 +1613,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             y = doc.lastAutoTable.finalY + 10;
         }
         
-        // ===== FOOTER =====
         const pageHeight = doc.internal.pageSize.getHeight();
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
@@ -1484,7 +1620,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         doc.text('Generated on ' + new Date().toLocaleString('en-IN') + ' | ' + data.companyName, 
                  pageWidth / 2, pageHeight - 8, { align: 'center' });
         
-        // Page numbers
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
@@ -1501,7 +1636,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
     }
 }
 
-// ✅ Generate PDF for all workers
 function generateAllWorkersPDF(month, year) {
     try {
         const { jsPDF } = window.jspdf;
@@ -1517,17 +1651,22 @@ function generateAllWorkersPDF(month, year) {
             const d = new Date(a.date);
             return d.getMonth() === month - 1 && d.getFullYear() === year;
         });
+        const bonuses = data.bonuses.filter(b => {
+            if (!b.date) return false;
+            const d = new Date(b.date);
+            return d.getMonth() === month - 1 && d.getFullYear() === year;
+        });
         
         const totalSalary = records.reduce((s, r) => s + r.salary, 0);
         const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-        const netPayable = totalSalary - totalAdvance;
+        const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+        const netPayable = totalSalary - totalAdvance + totalBonus;
         const totalHours = records.reduce((s, r) => s + r.hours, 0);
         const totalOT = records.reduce((s, r) => s + r.overtime, 0);
         
         const monthName = getMonthName(month);
         const pageWidth = doc.internal.pageSize.getWidth();
         
-        // Header
         doc.setFillColor(9, 132, 227);
         doc.rect(0, 0, pageWidth, 30, 'F');
         doc.setTextColor(255, 255, 255);
@@ -1541,7 +1680,6 @@ function generateAllWorkersPDF(month, year) {
         doc.text(monthName + ' ' + year, pageWidth / 2, 27, { align: 'center' });
         doc.setTextColor(0, 0, 0);
         
-        // Grand totals
         let y = 40;
         doc.setFillColor(232, 245, 233);
         doc.rect(14, y, pageWidth - 28, 8, 'F');
@@ -1559,7 +1697,7 @@ function generateAllWorkersPDF(month, year) {
                 ['Total Workers', String(new Set(records.map(r => r.workerId)).size), 'Total Days', String(records.length)],
                 ['Total Hours', totalHours.toFixed(1), 'Total OT', totalOT.toFixed(1)],
                 ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Total Advance', 'Rs. ' + totalAdvance.toFixed(0)],
-                ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
+                ['Total Bonus', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
             ],
             theme: 'grid',
             styles: { fontSize: 10, cellPadding: 3 },
@@ -1570,7 +1708,6 @@ function generateAllWorkersPDF(month, year) {
         });
         y = doc.lastAutoTable.finalY + 10;
         
-        // Per worker summary
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text('Worker-wise Summary', 14, y);
@@ -1584,7 +1721,7 @@ function generateAllWorkersPDF(month, year) {
                     name: w ? w.name : 'Unknown',
                     dept: w ? w.department : '-',
                     mobile: w ? w.mobile || '-' : '-',
-                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0
+                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0
                 };
             }
             workerMap[r.workerId].days++;
@@ -1596,25 +1733,29 @@ function generateAllWorkersPDF(month, year) {
         advances.forEach(a => {
             if (workerMap[a.workerId]) workerMap[a.workerId].advance += a.amount;
         });
+
+        bonuses.forEach(b => {
+            if (workerMap[b.workerId]) workerMap[b.workerId].bonus += b.amount;
+        });
         
         const workerTableData = Object.values(workerMap).map(w => [
             w.name, w.dept, String(w.days), w.hours.toFixed(1),
             w.ot.toFixed(1), 'Rs. ' + w.salary.toFixed(0),
             'Rs. ' + w.advance.toFixed(0),
-            'Rs. ' + (w.salary - w.advance).toFixed(0)
+            'Rs. ' + w.bonus.toFixed(0),
+            'Rs. ' + (w.salary - w.advance + w.bonus).toFixed(0)
         ]);
         
         doc.autoTable({
             startY: y,
-            head: [['Name','Department','Days','Hours','OT','Salary','Advance','Net']],
+            head: [['Name','Department','Days','Hours','OT','Salary','Advance','Bonus','Net']],
             body: workerTableData,
             theme: 'grid',
-            headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-            styles: { fontSize: 9, cellPadding: 2.5 },
+            headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            styles: { fontSize: 8, cellPadding: 2 },
             alternateRowStyles: { fillColor: [248, 249, 250] }
         });
         
-        // Footer
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageCount = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
@@ -1635,7 +1776,6 @@ function generateAllWorkersPDF(month, year) {
     }
 }
 
-// Download PDF helper
 function downloadDocPDF(doc, filename) {
     if (!doc) return;
     doc.save(filename);
@@ -1645,7 +1785,6 @@ function downloadDocPDF(doc, filename) {
 // WHATSAPP PDF INTEGRATION
 // ============================================
 
-// ✅ Worker ko PDF WhatsApp par bhejo
 function openWhatsAppForWorkerPDF(workerId) {
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
@@ -1655,17 +1794,13 @@ function openWhatsAppForWorkerPDF(workerId) {
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
     
-    // Generate PDF
     const doc = generateWorkerPDF(workerId, month, year);
     if (!doc) return;
     
-    // Store PDF for later
     waPendingPDF = { doc, workerId, month, year, type: 'single' };
     waCurrentWorkerId = workerId;
     waCurrentReportType = 'pdf';
     
-    // Generate message
-    const worker2 = data.workers.find(w => w.id === workerId);
     const records = data.attendance.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -1676,15 +1811,21 @@ function openWhatsAppForWorkerPDF(workerId) {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const bonuses = data.bonuses.filter(b => {
+        if (!b.date) return false;
+        const d = new Date(b.date);
+        return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
+    const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+    const netPayable = totalSalary - totalAdvance + totalBonus;
     
     const message = `*${data.companyName.toUpperCase()}*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `*📋 ${getMonthName(month)} ${year} Report*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Namaste *${worker2.name}* ji,\n\n` +
+        `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
         `*📊 Summary:*\n` +
         `• Total Days: *${records.length}*\n` +
@@ -1701,7 +1842,6 @@ function openWhatsAppForWorkerPDF(workerId) {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
-// ✅ Single report PDF WhatsApp
 function sendSingleReportPDFWhatsApp() {
     const workerId = document.getElementById('singleWorkerReport').value;
     if (!workerId) { alert('Pehle worker select karein'); return; }
@@ -1730,9 +1870,15 @@ function sendSingleReportPDFWhatsApp() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const bonuses = data.bonuses.filter(b => {
+        if (!b.date) return false;
+        const d = new Date(b.date);
+        return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
+    const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+    const netPayable = totalSalary - totalAdvance + totalBonus;
     
     const message = `*${data.companyName.toUpperCase()}*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -1744,6 +1890,7 @@ function sendSingleReportPDFWhatsApp() {
         `• Total Days: *${records.length}*\n` +
         `• Gross Salary: *₹${totalSalary.toFixed(0)}*\n` +
         `• Advance: *₹${totalAdvance.toFixed(0)}*\n` +
+        `• Bonus: *₹${totalBonus.toFixed(0)}*\n` +
         `• *Net Payable: ₹${netPayable.toFixed(0)}*\n\n` +
         `_Kripya PDF file check karein._\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -1757,7 +1904,6 @@ function sendSingleReportPDFWhatsApp() {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
-// ✅ All workers report PDF WhatsApp
 function sendAllReportPDFWhatsApp() {
     const month = parseInt(document.getElementById('reportMonth').value);
     const year = parseInt(document.getElementById('reportYear').value);
@@ -1810,7 +1956,6 @@ function sendAllReportPDFWhatsApp() {
     document.getElementById('whatsappModal').classList.add('show');
 }
 
-// ✅ Send current worker summary as PDF WhatsApp
 function sendCurrentWorkerSummaryWhatsApp() {
     const workerId = document.getElementById('attWorkerFilter').value;
     if (!workerId) {
@@ -1820,7 +1965,6 @@ function sendCurrentWorkerSummaryWhatsApp() {
     openWhatsAppForWorkerPDF(parseInt(workerId));
 }
 
-// ✅ Download PDF only (from modal)
 function downloadPDFFromModal() {
     if (!waPendingPDF || !waPendingPDF.doc) {
         alert('PDF generate nahi hua. Please dobara try karein.');
@@ -1832,7 +1976,6 @@ function downloadPDFFromModal() {
     alert('✅ PDF downloaded: ' + filename);
 }
 
-// ✅ Main function - Download PDF + Open WhatsApp
 function sendWhatsAppPDF() {
     if (!waPendingPDF || !waPendingPDF.doc) {
         alert('PDF generate nahi hua. Please dobara try karein.');
@@ -1851,15 +1994,12 @@ function sendWhatsAppPDF() {
         return;
     }
     
-    // 1. Download PDF
     const worker = data.workers.find(w => w.id === waPendingPDF.workerId);
     const filename = `${worker ? worker.name.replace(/\s+/g, '_') : 'Report'}_${getMonthName(waPendingPDF.month)}_${waPendingPDF.year}.pdf`;
     waPendingPDF.doc.save(filename);
     
-    // 2. Copy message to clipboard
     navigator.clipboard.writeText(message).catch(() => {});
     
-    // 3. Open WhatsApp after small delay
     setTimeout(() => {
         const encodedMessage = encodeURIComponent(message);
         const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
@@ -1867,7 +2007,6 @@ function sendWhatsAppPDF() {
         
         closeWhatsAppModal();
         
-        // 4. Show instructions
         setTimeout(() => {
             alert(
                 '✅ PDF Downloaded: ' + filename + '\n\n' +
@@ -1945,6 +2084,7 @@ function init() {
     loadWorkers();
     loadAttendance();
     loadAdvances();
+    loadBonuses();
     initDateFields();
     updateLastSaveTime();
     
@@ -1976,14 +2116,16 @@ function loadFromStorage() {
         const saved = localStorage.getItem('attendanceData');
         if (saved) {
             const parsed = JSON.parse(saved);
-            if (parsed.workers || parsed.attendance || parsed.advances) {
+            if (parsed.workers || parsed.attendance || parsed.advances || parsed.bonuses) {
                 data = parsed;
                 if (!data.workers) data.workers = [];
                 if (!data.attendance) data.attendance = [];
                 if (!data.advances) data.advances = [];
+                if (!data.bonuses) data.bonuses = [];
                 data.nextWorkerId = data.workers.length > 0 ? Math.max(...data.workers.map(w => w.id)) + 1 : 1;
                 data.nextAttId = data.attendance.length > 0 ? Math.max(...data.attendance.map(a => a.id)) + 1 : 1;
                 data.nextAdvanceId = data.advances.length > 0 ? Math.max(...data.advances.map(a => a.id)) + 1 : 1;
+                data.nextBonusId = data.bonuses.length > 0 ? Math.max(...data.bonuses.map(b => b.id)) + 1 : 1;
             }
         }
         const company = localStorage.getItem('companyName');
@@ -2016,6 +2158,7 @@ function initDateFields() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('attDate').value = today;
     document.getElementById('advanceDate').value = today;
+    document.getElementById('bonusDate').value = today;
 }
 
 function setupAutoCalculate() {
@@ -2074,15 +2217,16 @@ function showTab(tab) {
     if (tab === 'attendance') loadAttendance();
     if (tab === 'workers') loadWorkers();
     if (tab === 'advances') loadAdvances();
+    if (tab === 'bonuses') loadBonuses();
     if (tab === 'reports') populateSingleWorkerDropdown();
 }
 
 function populateAllDropdowns() {
-    ['attWorker', 'attWorkerFilter', 'advanceWorker', 'advanceWorkerFilter', 'singleWorkerReport'].forEach(id => {
+    ['attWorker', 'attWorkerFilter', 'advanceWorker', 'advanceWorkerFilter', 'bonusWorker', 'bonusWorkerFilter', 'singleWorkerReport'].forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
         const current = sel.value;
-        const isFilter = id === 'attWorkerFilter' || id === 'advanceWorkerFilter';
+        const isFilter = id === 'attWorkerFilter' || id === 'advanceWorkerFilter' || id === 'bonusWorkerFilter';
         sel.innerHTML = '';
         if (isFilter) sel.innerHTML = '<option value="">All Workers</option>';
         else sel.innerHTML = '<option value="">Select Worker</option>';
@@ -2211,12 +2355,14 @@ function updateWorker() {
         w.name = name; w.department = dept; w.mobile = mobile; w.hourlyRate = hr; w.overtimeRate = otr;
         data.attendance.forEach(a => { if (a.workerId == id) a.workerName = name; });
         data.advances.forEach(a => { if (a.workerId == id) a.workerName = name; });
+        data.bonuses.forEach(b => { if (b.workerId == id) b.workerName = name; });
         clearWorkerForm();
         saveToStorage();
         loadWorkers();
         populateAllDropdowns();
         loadAttendance();
         loadAdvances();
+        loadBonuses();
         triggerAutoSave('Worker updated');
         alert('✅ Worker updated!');
     }
@@ -2229,12 +2375,14 @@ function deleteWorker() {
     data.workers = data.workers.filter(w => w.id != id);
     data.attendance = data.attendance.filter(a => a.workerId != id);
     data.advances = data.advances.filter(a => a.workerId != id);
+    data.bonuses = data.bonuses.filter(b => b.workerId != id);
     clearWorkerForm();
     saveToStorage();
     loadWorkers();
     populateAllDropdowns();
     loadAttendance();
     loadAdvances();
+    loadBonuses();
     triggerAutoSave('Worker deleted');
     alert('✅ Worker deleted!');
 }
@@ -2423,7 +2571,9 @@ function showWorkerSummary(id) {
     const totalBreak = att.reduce((s, a) => s + (a.breakHours || 0), 0);
     const advances = data.advances.filter(a => a.workerId === id);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
+    const bonuses = data.bonuses.filter(b => b.workerId === id);
+    const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+    const netPayable = totalSalary - totalAdvance + totalBonus;
     document.getElementById('summaryBox').innerHTML = `
         <div style="font-weight:600;font-size:15px;">${worker.name}</div>
         <div style="color:#6c757d;font-size:13px;">${worker.department} | 📱 ${worker.mobile || 'N/A'}</div>
@@ -2434,9 +2584,10 @@ function showWorkerSummary(id) {
             <div class="stat-card"><div class="num">${totalOT.toFixed(1)}</div><div class="label">OT</div></div>
             <div class="stat-card"><div class="num">${totalBreak.toFixed(1)}</div><div class="label">Break</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;border-top:1px solid #e9ecef;padding-top:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;border-top:1px solid #e9ecef;padding-top:8px;">
             <div class="stat-card"><div class="num">₹${totalSalary.toFixed(0)}</div><div class="label">Gross Salary</div></div>
             <div class="stat-card"><div class="num num-danger">₹${totalAdvance.toFixed(0)}</div><div class="label">Advance</div></div>
+            <div class="stat-card"><div class="num num-success">₹${totalBonus.toFixed(0)}</div><div class="label">Bonus</div></div>
             <div class="stat-card"><div class="num" style="color:${netPayable < 0 ? '#e17055' : '#00b894'};">₹${netPayable.toFixed(0)}</div><div class="label">Net Payable</div></div>
         </div>
     `;
@@ -2568,6 +2719,131 @@ function showAdvanceSummary(id) {
 }
 
 // ============================================
+// BONUS FUNCTIONS (NEW)
+// ============================================
+function loadBonuses() {
+    const workerId = document.getElementById('bonusWorkerFilter').value;
+    let records = data.bonuses || [];
+    if (workerId) records = records.filter(b => b.workerId == workerId);
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+    document.getElementById('bonusCount').textContent = records.length + ' records';
+    const tbody = document.getElementById('bonusTable');
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No bonus records</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map((b, i) => {
+        const worker = data.workers.find(w => w.id === b.workerId);
+        return `<tr onclick="editBonus(${b.id})" data-bonus-id="${b.id}">
+            <td>${i+1}</td><td>${b.date}</td><td>${b.workerName}</td>
+            <td>${worker ? worker.department : '-'}</td>
+            <td>₹${b.amount.toFixed(0)}</td><td>${b.reason || '-'}</td>
+            <td><span class="badge" style="background:#d4edda;color:#155724;">✏️ Edit</span></td>
+        </tr>`;
+    }).join('');
+    if (workerId) showBonusSummary(parseInt(workerId));
+    else document.getElementById('bonusSummary').innerHTML = '<div class="text-muted text-center">Select a worker</div>';
+}
+
+function editBonus(id) {
+    const b = data.bonuses.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('editBonusId').value = b.id;
+    document.getElementById('bonusWorker').value = b.workerId;
+    document.getElementById('bonusDate').value = b.date;
+    document.getElementById('bonusAmount').value = b.amount;
+    document.getElementById('bonusReason').value = b.reason || '';
+    document.getElementById('bonusFormTitle').textContent = '✏️ Edit Bonus';
+    document.getElementById('bonusEditBadge').style.display = 'inline';
+    document.getElementById('saveBonusBtn').style.display = 'none';
+    document.getElementById('updateBonusBtn').style.display = 'inline-flex';
+    document.getElementById('cancelBonusEditBtn').style.display = 'inline-flex';
+    document.querySelectorAll('#bonusTable tr').forEach(tr => {
+        tr.classList.remove('selected');
+        if (tr.dataset.bonusId == id) tr.classList.add('selected');
+    });
+}
+
+function saveBonus() {
+    const workerId = parseInt(document.getElementById('bonusWorker').value);
+    const date = document.getElementById('bonusDate').value;
+    const amount = parseFloat(document.getElementById('bonusAmount').value);
+    const reason = document.getElementById('bonusReason').value.trim();
+    if (!workerId || !date || !amount) { alert('Fill all fields'); return; }
+    if (amount <= 0) { alert('Enter valid amount'); return; }
+    const worker = data.workers.find(w => w.id === workerId);
+    if (!worker) { alert('Worker not found'); return; }
+    data.bonuses.push({ id: data.nextBonusId++, workerId, workerName: worker.name, date, amount, reason });
+    clearBonusForm();
+    saveToStorage();
+    loadBonuses();
+    triggerAutoSave('Bonus added');
+    alert('✅ Bonus saved!');
+}
+
+function updateBonus() {
+    const id = document.getElementById('editBonusId').value;
+    if (!id) { alert('No record selected'); return; }
+    const workerId = parseInt(document.getElementById('bonusWorker').value);
+    const date = document.getElementById('bonusDate').value;
+    const amount = parseFloat(document.getElementById('bonusAmount').value);
+    const reason = document.getElementById('bonusReason').value.trim();
+    if (!workerId || !date || !amount) { alert('Fill all fields'); return; }
+    if (amount <= 0) { alert('Enter valid amount'); return; }
+    const b = data.bonuses.find(x => x.id == id);
+    if (b) {
+        const worker = data.workers.find(w => w.id === workerId);
+        b.workerId = workerId; b.workerName = worker ? worker.name : 'Unknown';
+        b.date = date; b.amount = amount; b.reason = reason;
+        clearBonusForm();
+        saveToStorage();
+        loadBonuses();
+        triggerAutoSave('Bonus updated');
+        alert('✅ Updated!');
+    }
+}
+
+function deleteBonus() {
+    const id = document.getElementById('editBonusId').value;
+    if (!id) { alert('Select a record first'); return; }
+    if (!confirm('Delete this bonus record?')) return;
+    data.bonuses = data.bonuses.filter(b => b.id != id);
+    clearBonusForm();
+    saveToStorage();
+    loadBonuses();
+    triggerAutoSave('Bonus deleted');
+    alert('✅ Deleted!');
+}
+
+function clearBonusForm() {
+    document.getElementById('editBonusId').value = '';
+    document.getElementById('bonusDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bonusAmount').value = '';
+    document.getElementById('bonusReason').value = '';
+    document.getElementById('bonusFormTitle').textContent = 'Add Bonus';
+    document.getElementById('bonusEditBadge').style.display = 'none';
+    document.getElementById('saveBonusBtn').style.display = 'inline-flex';
+    document.getElementById('updateBonusBtn').style.display = 'none';
+    document.getElementById('cancelBonusEditBtn').style.display = 'none';
+    document.querySelectorAll('#bonusTable tr').forEach(tr => tr.classList.remove('selected'));
+}
+
+function cancelBonusEdit() { clearBonusForm(); alert('Edit cancelled'); }
+
+function showBonusSummary(id) {
+    const worker = data.workers.find(w => w.id === id);
+    if (!worker) return;
+    const bonuses = data.bonuses.filter(b => b.workerId === id);
+    const total = bonuses.reduce((s, b) => s + b.amount, 0);
+    document.getElementById('bonusSummary').innerHTML = `
+        <div style="font-weight:600;font-size:15px;">${worker.name}</div>
+        <div style="font-size:20px;font-weight:700;color:#00b894;margin:5px 0;">₹${total.toFixed(0)}</div>
+        <div style="font-size:12px;color:#6c757d;">${bonuses.length} bonuses</div>
+        ${bonuses.map(b => `<div style="font-size:12px;color:#6c757d;padding:2px 0;">${b.date} - ₹${b.amount.toFixed(0)} ${b.reason ? '('+b.reason+')' : ''}</div>`).join('')}
+    `;
+}
+
+// ============================================
 // REPORT FUNCTIONS
 // ============================================
 function generateSingleReport() {
@@ -2587,18 +2863,25 @@ function generateSingleReport() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const bonuses = data.bonuses.filter(b => {
+        if (!b.date) return false;
+        const d = new Date(b.date);
+        return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
     const totalHours = records.reduce((s, r) => s + r.hours, 0);
     const totalOT = records.reduce((s, r) => s + r.overtime, 0);
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
     const totalBreak = records.reduce((s, r) => s + (r.breakHours || 0), 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
-    const netPayable = totalSalary - totalAdvance;
+    const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
+    const netPayable = totalSalary - totalAdvance + totalBonus;
     document.getElementById('rWorkers').textContent = '1';
     document.getElementById('rDays').textContent = records.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
+    document.getElementById('rBonus').textContent = '₹' + totalBonus.toFixed(0);
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
     report += `  SINGLE WORKER REPORT - ${getMonthName(month)} ${year}\n`;
@@ -2607,7 +2890,7 @@ function generateSingleReport() {
     report += `   Mobile: ${worker.mobile || 'N/A'} | Rate: ₹${worker.hourlyRate}/hr\n`;
     report += `${'-'.repeat(80)}\n`;
     report += `Days: ${records.length} | Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
-    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
+    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
 }
@@ -2625,24 +2908,31 @@ function generateAllReport() {
         const d = new Date(a.date);
         return d.getMonth() === month - 1 && d.getFullYear() === year;
     });
+    const bonuses = data.bonuses.filter(b => {
+        if (!b.date) return false;
+        const d = new Date(b.date);
+        return d.getMonth() === month - 1 && d.getFullYear() === year;
+    });
     const workers = new Set(records.map(r => r.workerId)).size;
     const totalHours = records.reduce((s, r) => s + r.hours, 0);
     const totalOT = records.reduce((s, r) => s + r.overtime, 0);
     const totalSalary = records.reduce((s, r) => s + r.salary, 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
+    const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     document.getElementById('rWorkers').textContent = workers;
     document.getElementById('rDays').textContent = records.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
     document.getElementById('rAdvance').textContent = '₹' + totalAdvance.toFixed(0);
+    document.getElementById('rBonus').textContent = '₹' + totalBonus.toFixed(0);
     let report = `${'='.repeat(80)}\n`;
     report += `  ${data.companyName.toUpperCase()}\n`;
     report += `  ALL WORKERS REPORT - ${getMonthName(month)} ${year}\n`;
     report += `${'='.repeat(80)}\n\n`;
     report += `Workers: ${workers} | Days: ${records.length}\n`;
     report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
-    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)}\n`;
+    report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
 }
@@ -2692,6 +2982,19 @@ function exportAdvancesOnly() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'advances_export.xlsx';
+    link.click();
+}
+
+function exportBonusesOnly() {
+    const wb = XLSX.utils.book_new();
+    const data2 = [['ID','Worker','Date','Amount','Reason']];
+    data.bonuses.forEach(b => data2.push([b.id, b.workerName, b.date, b.amount, b.reason||'']));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data2), 'Bonuses');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'bonuses_export.xlsx';
     link.click();
 }
 
