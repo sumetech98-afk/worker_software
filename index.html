@@ -90,6 +90,7 @@
         .badge-wa { background: #25D366; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-pdf { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
         .badge-bonus { background: #00b894; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+        .badge-partial { background: #fdcb6e; color: #2d3436; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
 
         .form-group { margin-bottom: 12px; }
         .form-group label {
@@ -159,11 +160,14 @@
         table tr.selected { background: #e3f2fd; border-left: 3px solid #0984e3; }
         table tr.absent-row { background: #fff5f5 !important; }
         table tr.absent-row td { color: #c0392b; }
+        table tr.partial-row { background: #fffbf0 !important; }
 
         .badge { padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; display: inline-block; }
         .badge-present { background: #d4edda; color: #155724; }
         .badge-absent { background: #f8d7da; color: #721c24; }
         .badge-overtime { background: #fff3cd; color: #856404; }
+        .badge-half-day { background: #fff3cd; color: #856404; }
+        .badge-leave { background: #e2e3e5; color: #383d41; }
 
         .stats-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 10px 0; }
         .stat-card { background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center; }
@@ -493,6 +497,11 @@
                                 <label>Overtime (after 8 hrs)</label>
                                 <input type="number" id="attOT" step="0.5" readonly>
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Working Day Status</label>
+                            <input type="text" id="workingDayStatus" readonly style="background:#f8f9fa;font-weight:600;">
                         </div>
                         
                         <div class="form-group">
@@ -829,7 +838,8 @@
             
             <div class="stats-grid-6" id="reportStats">
                 <div class="stat-card"><div class="num" id="rWorkers">0</div><div class="label">Workers</div></div>
-                <div class="stat-card"><div class="num" id="rDays">0</div><div class="label">Working Days</div></div>
+                <div class="stat-card"><div class="num" id="rDays">0</div><div class="label">Working Days (12h+)</div></div>
+                <div class="stat-card"><div class="num" id="rPartial">0</div><div class="label">Partial Days</div></div>
                 <div class="stat-card"><div class="num" id="rHours">0</div><div class="label">Hours</div></div>
                 <div class="stat-card"><div class="num" id="rOT">0</div><div class="label">OT</div></div>
                 <div class="stat-card"><div class="num" id="rSalary">0</div><div class="label">Gross Salary</div></div>
@@ -840,7 +850,7 @@
             <div class="pdf-info-box">
                 📱 <strong>PDF on WhatsApp:</strong> PDF download hoga + WhatsApp chat khulega. Bas <strong>attach icon (📎)</strong> dabakar PDF select karein aur send karein.
                 <br><br>
-                ℹ️ <strong>Note:</strong> Absent records attendance table me dikhenge lekin working days, hours, salary aur report me count nahi honge.
+                ℹ️ <strong>Note:</strong> Working Day sirf tab count hoga jab duty <strong>12 ghante ya usse zyada</strong> ho. 12 ghante se kam duty wale din <strong>Partial Days</strong> me count honge, lekin unka payment milta rahega. Absent days ka koi payment nahi.
             </div>
             
             <div class="report-box" id="reportContent">Select worker and month, then click Generate</div>
@@ -989,6 +999,11 @@ let data = {
 let waCurrentWorkerId = null;
 let waCurrentReportType = null;
 let waPendingPDF = null;
+
+// ✅ FULL DAY DUTY: 12 hours
+const FULL_DAY_HOURS = 12;
+// ✅ Overtime after 8 hours
+const OT_AFTER_HOURS = 8;
 
 // ============================================
 // INDEXEDDB - Folder Handle Persistence
@@ -1274,7 +1289,8 @@ async function saveAllData() {
         const totalSalary = data.attendance.reduce((s, a) => s + a.salary, 0);
         const totalAdvance = data.advances.reduce((s, a) => s + a.amount, 0);
         const totalBonus = data.bonuses.reduce((s, b) => s + b.amount, 0);
-        const totalWorkingDays = data.attendance.filter(a => a.status !== 'Absent').length;
+        const totalWorkingDays = data.attendance.filter(a => a.status !== 'Absent' && a.hours >= FULL_DAY_HOURS).length;
+        const totalPartialDays = data.attendance.filter(a => a.status !== 'Absent' && a.hours > 0 && a.hours < FULL_DAY_HOURS).length;
         const totalAbsent = data.attendance.filter(a => a.status === 'Absent').length;
         const cData = [
             ['=== ATTENDANCE SYSTEM SUMMARY ==='],[''],
@@ -1282,7 +1298,8 @@ async function saveAllData() {
             ['Generated', new Date().toLocaleString()],[''],
             ['Total Workers', data.workers.length],
             ['Total Attendance Records', data.attendance.length],
-            ['Total Working Days', totalWorkingDays],
+            ['Working Days (12h+)', totalWorkingDays],
+            ['Partial Days (<12h)', totalPartialDays],
             ['Total Absent Days', totalAbsent],
             ['Total Advances', data.advances.length],
             ['Total Bonuses', data.bonuses.length],
@@ -1454,8 +1471,10 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         }).sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        // ✅ Separate Present and Absent
+        // ✅ Categorize records
         const presentRecords = records.filter(r => r.status !== 'Absent');
+        const fullDayRecords = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS);
+        const partialDayRecords = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS);
         const absentRecords = records.filter(r => r.status === 'Absent');
         
         const advances = data.advances.filter(a => {
@@ -1470,7 +1489,7 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         });
         
-        // ✅ Only present records count in totals
+        // ✅ Hours & salary include ALL present records (full + partial)
         const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
         const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
         const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
@@ -1540,10 +1559,11 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
         doc.setFont('helvetica', 'normal');
         
         const summaryData = [
-            ['Working Days', String(presentRecords.length), 'Absent Days', String(absentRecords.length)],
-            ['Total Hours', totalHours.toFixed(1), 'Overtime Hours', totalOT.toFixed(1)],
-            ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Advance Taken', 'Rs. ' + totalAdvance.toFixed(0)],
-            ['Bonus Given', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
+            ['Working Days (12h+)', String(fullDayRecords.length), 'Partial Days (<12h)', String(partialDayRecords.length)],
+            ['Absent Days', String(absentRecords.length), 'Total Hours', totalHours.toFixed(1)],
+            ['Overtime Hours', totalOT.toFixed(1), 'Gross Salary', 'Rs. ' + totalSalary.toFixed(0)],
+            ['Advance Taken', 'Rs. ' + totalAdvance.toFixed(0), 'Bonus Given', 'Rs. ' + totalBonus.toFixed(0)],
+            ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
         ];
         
         doc.autoTable({
@@ -1596,7 +1616,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             y = doc.lastAutoTable.finalY + 10;
         }
         
-        // ✅ Daily Attendance - All records including absent
         if (records.length > 0) {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
@@ -1610,7 +1629,7 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
                 r.breakHours ? r.breakHours.toFixed(1) : '0',
                 r.hours.toFixed(1),
                 r.overtime.toFixed(1),
-                r.status,
+                r.status === 'Present' && r.hours >= FULL_DAY_HOURS ? 'Full Day' : (r.status === 'Present' && r.hours > 0 ? 'Partial' : r.status),
                 'Rs. ' + r.salary.toFixed(0)
             ]);
             
@@ -1623,10 +1642,18 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
                 styles: { fontSize: 9, cellPadding: 2.5 },
                 alternateRowStyles: { fillColor: [248, 249, 250] },
                 didParseCell: function(data) {
-                    // Highlight absent rows
-                    if (data.section === 'body' && data.column.index === 6 && data.cell.raw === 'Absent') {
-                        data.cell.styles.textColor = [192, 57, 43];
-                        data.cell.styles.fontStyle = 'bold';
+                    if (data.section === 'body' && data.column.index === 6) {
+                        const val = data.cell.raw;
+                        if (val === 'Absent') {
+                            data.cell.styles.textColor = [192, 57, 43];
+                            data.cell.styles.fontStyle = 'bold';
+                        } else if (val === 'Partial') {
+                            data.cell.styles.textColor = [230, 126, 34];
+                            data.cell.styles.fontStyle = 'bold';
+                        } else if (val === 'Full Day') {
+                            data.cell.styles.textColor = [39, 174, 96];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
                     }
                 }
             });
@@ -1677,8 +1704,9 @@ function generateAllWorkersPDF(month, year) {
             return d.getMonth() === month - 1 && d.getFullYear() === year;
         });
         
-        // ✅ Only non-absent records count
         const presentRecords = records.filter(r => r.status !== 'Absent');
+        const fullDayRecords = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS);
+        const partialDayRecords = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS);
         const absentCount = records.filter(r => r.status === 'Absent').length;
         
         const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
@@ -1718,11 +1746,11 @@ function generateAllWorkersPDF(month, year) {
             startY: y,
             head: [],
             body: [
-                ['Total Workers', String(new Set(presentRecords.map(r => r.workerId)).size), 'Working Days', String(presentRecords.length)],
-                ['Total Absent', String(absentCount), 'Total Hours', totalHours.toFixed(1)],
-                ['Total OT', totalOT.toFixed(1), 'Gross Salary', 'Rs. ' + totalSalary.toFixed(0)],
-                ['Total Advance', 'Rs. ' + totalAdvance.toFixed(0), 'Total Bonus', 'Rs. ' + totalBonus.toFixed(0)],
-                ['Net Payable', 'Rs. ' + netPayable.toFixed(0), '', '']
+                ['Total Workers', String(new Set(presentRecords.map(r => r.workerId)).size), 'Working Days (12h+)', String(fullDayRecords.length)],
+                ['Partial Days (<12h)', String(partialDayRecords.length), 'Total Absent', String(absentCount)],
+                ['Total Hours', totalHours.toFixed(1), 'Total OT', totalOT.toFixed(1)],
+                ['Gross Salary', 'Rs. ' + totalSalary.toFixed(0), 'Total Advance', 'Rs. ' + totalAdvance.toFixed(0)],
+                ['Total Bonus', 'Rs. ' + totalBonus.toFixed(0), 'Net Payable', 'Rs. ' + netPayable.toFixed(0)]
             ],
             theme: 'grid',
             styles: { fontSize: 10, cellPadding: 3 },
@@ -1739,7 +1767,6 @@ function generateAllWorkersPDF(month, year) {
         y += 4;
         
         const workerMap = {};
-        // Only count present records for worker summary
         presentRecords.forEach(r => {
             if (!workerMap[r.workerId]) {
                 const w = data.workers.find(x => x.id === r.workerId);
@@ -1747,16 +1774,17 @@ function generateAllWorkersPDF(month, year) {
                     name: w ? w.name : 'Unknown',
                     dept: w ? w.department : '-',
                     mobile: w ? w.mobile || '-' : '-',
-                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0, absent: 0
+                    fullDays: 0, partialDays: 0, absent: 0,
+                    hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0
                 };
             }
-            workerMap[r.workerId].days++;
+            if (r.hours >= FULL_DAY_HOURS) workerMap[r.workerId].fullDays++;
+            else if (r.hours > 0) workerMap[r.workerId].partialDays++;
             workerMap[r.workerId].hours += r.hours;
             workerMap[r.workerId].ot += r.overtime;
             workerMap[r.workerId].salary += r.salary;
         });
         
-        // Count absent days per worker
         records.filter(r => r.status === 'Absent').forEach(r => {
             if (!workerMap[r.workerId]) {
                 const w = data.workers.find(x => x.id === r.workerId);
@@ -1764,7 +1792,8 @@ function generateAllWorkersPDF(month, year) {
                     name: w ? w.name : 'Unknown',
                     dept: w ? w.department : '-',
                     mobile: w ? w.mobile || '-' : '-',
-                    days: 0, hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0, absent: 0
+                    fullDays: 0, partialDays: 0, absent: 0,
+                    hours: 0, ot: 0, salary: 0, advance: 0, bonus: 0
                 };
             }
             workerMap[r.workerId].absent++;
@@ -1773,22 +1802,20 @@ function generateAllWorkersPDF(month, year) {
         advances.forEach(a => {
             if (workerMap[a.workerId]) workerMap[a.workerId].advance += a.amount;
         });
-
         bonuses.forEach(b => {
             if (workerMap[b.workerId]) workerMap[b.workerId].bonus += b.amount;
         });
         
         const workerTableData = Object.values(workerMap).map(w => [
-            w.name, w.dept, String(w.days), String(w.absent), w.hours.toFixed(1),
-            w.ot.toFixed(1), 'Rs. ' + w.salary.toFixed(0),
-            'Rs. ' + w.advance.toFixed(0),
-            'Rs. ' + w.bonus.toFixed(0),
+            w.name, w.dept, String(w.fullDays), String(w.partialDays), String(w.absent),
+            w.hours.toFixed(1), w.ot.toFixed(1), 'Rs. ' + w.salary.toFixed(0),
+            'Rs. ' + w.advance.toFixed(0), 'Rs. ' + w.bonus.toFixed(0),
             'Rs. ' + (w.salary - w.advance + w.bonus).toFixed(0)
         ]);
         
         doc.autoTable({
             startY: y,
-            head: [['Name','Dept','Work Days','Absent','Hours','OT','Salary','Advance','Bonus','Net']],
+            head: [['Name','Dept','Full Days','Partial','Absent','Hours','OT','Salary','Adv','Bonus','Net']],
             body: workerTableData,
             theme: 'grid',
             headStyles: { fillColor: [9, 132, 227], textColor: 255, fontStyle: 'bold', fontSize: 7 },
@@ -1847,7 +1874,9 @@ function openWhatsAppForWorkerPDF(workerId) {
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
     const presentRecords = records.filter(r => r.status !== 'Absent');
-    const absentRecords = records.filter(r => r.status === 'Absent');
+    const fullDay = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS).length;
+    const partial = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS).length;
+    const absent = records.filter(r => r.status === 'Absent').length;
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -1870,8 +1899,9 @@ function openWhatsAppForWorkerPDF(workerId) {
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
         `*📊 Summary:*\n` +
-        `• Working Days: *${presentRecords.length}*\n` +
-        `• Absent Days: *${absentRecords.length}*\n` +
+        `• Working Days (12h+): *${fullDay}*\n` +
+        `• Partial Days (<12h): *${partial}*\n` +
+        `• Absent Days: *${absent}*\n` +
         `• Net Payable: *₹${netPayable.toFixed(0)}*\n\n` +
         `_Kripya PDF file check karein._\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -1909,7 +1939,9 @@ function sendSingleReportPDFWhatsApp() {
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
     const presentRecords = records.filter(r => r.status !== 'Absent');
-    const absentRecords = records.filter(r => r.status === 'Absent');
+    const fullDay = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS).length;
+    const partial = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS).length;
+    const absent = records.filter(r => r.status === 'Absent').length;
     const advances = data.advances.filter(a => {
         if (!a.date) return false;
         const d = new Date(a.date);
@@ -1932,8 +1964,9 @@ function sendSingleReportPDFWhatsApp() {
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly attendance aur salary report PDF mein attach hai.\n\n` +
         `*📊 Summary:*\n` +
-        `• Working Days: *${presentRecords.length}*\n` +
-        `• Absent Days: *${absentRecords.length}*\n` +
+        `• Working Days (12h+): *${fullDay}*\n` +
+        `• Partial Days (<12h): *${partial}*\n` +
+        `• Absent Days: *${absent}*\n` +
         `• Gross Salary: *₹${totalSalary.toFixed(0)}*\n` +
         `• Advance: *₹${totalAdvance.toFixed(0)}*\n` +
         `• Bonus: *₹${totalBonus.toFixed(0)}*\n` +
@@ -1991,7 +2024,6 @@ function sendAllReportPDFWhatsApp() {
         `*📋 ${getMonthName(month)} ${year} Report*\n\n` +
         `Namaste *${worker.name}* ji,\n\n` +
         `Aapki monthly report PDF mein attach hai.\n\n` +
-        `• Working Days: *${presentRecords.length}*\n` +
         `• Gross: *₹${totalSalary.toFixed(0)}*\n\n` +
         `_${data.companyName}_`;
     
@@ -2159,12 +2191,11 @@ function init() {
     setTimeout(() => { restoreFolder(); }, 300);
 }
 
-// ✅ Status change handler - hide/show time fields for Absent
 function setupStatusToggle() {
     const statusSelect = document.getElementById('attStatus');
     if (statusSelect) {
         statusSelect.addEventListener('change', toggleTimeFields);
-        toggleTimeFields(); // initial
+        toggleTimeFields();
     }
 }
 
@@ -2177,6 +2208,8 @@ function toggleTimeFields() {
         document.getElementById('attOT').value = '0';
         document.getElementById('breakHours').value = '0';
         document.getElementById('breakDeducted').value = 'Absent - No hours';
+        document.getElementById('workingDayStatus').value = '❌ Absent - Not counted';
+        document.getElementById('workingDayStatus').style.color = '#c0392b';
     } else {
         timeFields.style.display = 'block';
         calculateHours();
@@ -2241,7 +2274,6 @@ function setupAutoCalculate() {
     document.getElementById('autoCalc').addEventListener('change', calculateHours);
 }
 
-// ✅ Duty time: 8 AM to 8 PM (12 hours shift), 8 hours duty + 4 hours OT
 function calculateHours() {
     if (!document.getElementById('autoCalc').checked) return;
     const status = document.getElementById('attStatus').value;
@@ -2282,13 +2314,26 @@ function calculateHours() {
         
         let netHours = totalHours - breakHours;
         if (netHours < 0) netHours = 0;
-        // ✅ Overtime after 8 hours duty
-        let overtime = netHours > 8 ? netHours - 8 : 0;
+        // ✅ Overtime after 8 hours
+        let overtime = netHours > OT_AFTER_HOURS ? netHours - OT_AFTER_HOURS : 0;
         
         document.getElementById('breakHours').value = breakHours.toFixed(1);
         document.getElementById('attHours').value = netHours.toFixed(1);
         document.getElementById('attOT').value = overtime.toFixed(1);
         document.getElementById('breakDeducted').value = breakHours > 0 ? breakHours.toFixed(1) + ' hrs deducted' : 'No break';
+        
+        // ✅ Working Day Status
+        const statusEl = document.getElementById('workingDayStatus');
+        if (netHours >= FULL_DAY_HOURS) {
+            statusEl.value = '✅ Working Day (12h+ duty)';
+            statusEl.style.color = '#00b894';
+        } else if (netHours > 0) {
+            statusEl.value = '⚠️ Partial Day (' + netHours.toFixed(1) + 'h) - Working day count nahi hoga';
+            statusEl.style.color = '#e17055';
+        } else {
+            statusEl.value = '❌ No duty';
+            statusEl.style.color = '#c0392b';
+        }
     } catch(e) {}
 }
 
@@ -2513,13 +2558,22 @@ function loadAttendance() {
     tbody.innerHTML = records.map((r, i) => {
         const worker = data.workers.find(w => w.id === r.workerId);
         const isAbsent = r.status === 'Absent';
-        return `<tr onclick="editAttendance(${r.id})" data-attendance-id="${r.id}" class="${isAbsent ? 'absent-row' : ''}">
+        const isPartial = !isAbsent && r.hours > 0 && r.hours < FULL_DAY_HOURS;
+        let rowClass = '';
+        if (isAbsent) rowClass = 'absent-row';
+        else if (isPartial) rowClass = 'partial-row';
+        
+        let displayStatus = r.status;
+        if (!isAbsent && r.hours >= FULL_DAY_HOURS) displayStatus = 'Full Day';
+        else if (isPartial) displayStatus = 'Partial';
+        
+        return `<tr onclick="editAttendance(${r.id})" data-attendance-id="${r.id}" class="${rowClass}">
             <td>${i+1}</td><td>${r.date}</td><td>${r.workerName}</td>
             <td>${worker ? worker.department : '-'}</td><td>${worker ? worker.mobile || '-' : '-'}</td>
             <td>${r.checkIn || '-'}</td><td>${r.checkOut || '-'}</td>
             <td>${r.hours.toFixed(1)}</td><td>${r.overtime.toFixed(1)}</td>
             <td>${r.breakHours ? r.breakHours + 'h' : '-'}</td>
-            <td><span class="badge badge-${r.status.toLowerCase().replace(' ', '-')}">${r.status}</span></td>
+            <td><span class="badge badge-${displayStatus.toLowerCase().replace(' ', '-')}">${displayStatus}</span></td>
             <td>₹${r.salary.toFixed(0)}</td>
         </tr>`;
     }).join('');
@@ -2574,6 +2628,7 @@ function saveAttendance() {
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
     
+    // ✅ Payment includes ALL present records (full + partial)
     const salary = isAbsent ? 0 : (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
     
     data.attendance.push({
@@ -2645,6 +2700,7 @@ function clearAttForm() {
     document.getElementById('attHours').value = '';
     document.getElementById('attOT').value = '';
     document.getElementById('breakDeducted').value = '';
+    document.getElementById('workingDayStatus').value = '';
     document.getElementById('formTitle').textContent = 'Add Attendance';
     document.getElementById('editModeBadge').style.display = 'none';
     document.getElementById('editHint').style.display = 'none';
@@ -2661,9 +2717,11 @@ function showWorkerSummary(id) {
     const worker = data.workers.find(w => w.id === id);
     if (!worker) return;
     const att = data.attendance.filter(a => a.workerId === id);
-    // ✅ Only count non-absent records
     const presentAtt = att.filter(a => a.status !== 'Absent');
+    const fullDayAtt = presentAtt.filter(a => a.hours >= FULL_DAY_HOURS);
+    const partialAtt = presentAtt.filter(a => a.hours > 0 && a.hours < FULL_DAY_HOURS);
     const absentAtt = att.filter(a => a.status === 'Absent');
+    
     const totalHours = presentAtt.reduce((s, a) => s + a.hours, 0);
     const totalOT = presentAtt.reduce((s, a) => s + a.overtime, 0);
     const totalSalary = presentAtt.reduce((s, a) => s + a.salary, 0);
@@ -2673,15 +2731,16 @@ function showWorkerSummary(id) {
     const bonuses = data.bonuses.filter(b => b.workerId === id);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     const netPayable = totalSalary - totalAdvance + totalBonus;
+    
     document.getElementById('summaryBox').innerHTML = `
         <div style="font-weight:600;font-size:15px;">${worker.name}</div>
         <div style="color:#6c757d;font-size:13px;">${worker.department} | 📱 ${worker.mobile || 'N/A'}</div>
         <div style="color:#6c757d;font-size:13px;">₹${worker.hourlyRate}/hr, OT: ₹${worker.overtimeRate}/hr</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:10px;">
-            <div class="stat-card"><div class="num" style="color:#00b894;">${presentAtt.length}</div><div class="label">Working Days</div></div>
-            <div class="stat-card"><div class="num" style="color:#e17055;">${absentAtt.length}</div><div class="label">Absent Days</div></div>
-            <div class="stat-card"><div class="num">${totalHours.toFixed(1)}</div><div class="label">Hours</div></div>
-            <div class="stat-card"><div class="num">${totalOT.toFixed(1)}</div><div class="label">OT</div></div>
+            <div class="stat-card"><div class="num" style="color:#00b894;">${fullDayAtt.length}</div><div class="label">Full Days (12h+)</div></div>
+            <div class="stat-card"><div class="num" style="color:#e17055;">${partialAtt.length}</div><div class="label">Partial Days</div></div>
+            <div class="stat-card"><div class="num" style="color:#c0392b;">${absentAtt.length}</div><div class="label">Absent Days</div></div>
+            <div class="stat-card"><div class="num">${totalHours.toFixed(1)}</div><div class="label">Total Hours</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;border-top:1px solid #e9ecef;padding-top:8px;">
             <div class="stat-card"><div class="num">₹${totalSalary.toFixed(0)}</div><div class="label">Gross Salary</div></div>
@@ -2957,8 +3016,9 @@ function generateSingleReport() {
         const d = new Date(a.date);
         return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    // ✅ Only non-absent for calculation
     const presentRecords = records.filter(r => r.status !== 'Absent');
+    const fullDayRecords = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS);
+    const partialRecords = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS);
     const absentRecords = records.filter(r => r.status === 'Absent');
     
     const advances = data.advances.filter(a => {
@@ -2975,13 +3035,13 @@ function generateSingleReport() {
     const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
     const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
     const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
-    const totalBreak = presentRecords.reduce((s, r) => s + (r.breakHours || 0), 0);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     const netPayable = totalSalary - totalAdvance + totalBonus;
     
     document.getElementById('rWorkers').textContent = '1';
-    document.getElementById('rDays').textContent = presentRecords.length;
+    document.getElementById('rDays').textContent = fullDayRecords.length;
+    document.getElementById('rPartial').textContent = partialRecords.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
@@ -2995,8 +3055,10 @@ function generateSingleReport() {
     report += `👤 ${worker.name} (${worker.department})\n`;
     report += `   Mobile: ${worker.mobile || 'N/A'} | Rate: ₹${worker.hourlyRate}/hr\n`;
     report += `${'-'.repeat(80)}\n`;
-    report += `Working Days: ${presentRecords.length} | Absent Days: ${absentRecords.length}\n`;
-    report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
+    report += `Working Days (12h+): ${fullDayRecords.length}\n`;
+    report += `Partial Days (<12h): ${partialRecords.length}\n`;
+    report += `Absent Days: ${absentRecords.length}\n`;
+    report += `Total Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
     report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)} | Net: ₹${netPayable.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
     document.getElementById('reportContent').textContent = report;
@@ -3010,8 +3072,9 @@ function generateAllReport() {
         const d = new Date(a.date);
         return d.getMonth() === month - 1 && d.getFullYear() === year;
     });
-    // ✅ Only non-absent for calculation
     const presentRecords = records.filter(r => r.status !== 'Absent');
+    const fullDayRecords = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS);
+    const partialRecords = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS);
     const absentCount = records.filter(r => r.status === 'Absent').length;
     
     const advances = data.advances.filter(a => {
@@ -3033,7 +3096,8 @@ function generateAllReport() {
     const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
     
     document.getElementById('rWorkers').textContent = workers;
-    document.getElementById('rDays').textContent = presentRecords.length;
+    document.getElementById('rDays').textContent = fullDayRecords.length;
+    document.getElementById('rPartial').textContent = partialRecords.length;
     document.getElementById('rHours').textContent = totalHours.toFixed(1);
     document.getElementById('rOT').textContent = totalOT.toFixed(1);
     document.getElementById('rSalary').textContent = '₹' + totalSalary.toFixed(0);
@@ -3044,7 +3108,8 @@ function generateAllReport() {
     report += `  ${data.companyName.toUpperCase()}\n`;
     report += `  ALL WORKERS REPORT - ${getMonthName(month)} ${year}\n`;
     report += `${'='.repeat(80)}\n\n`;
-    report += `Workers: ${workers} | Working Days: ${presentRecords.length} | Absent: ${absentCount}\n`;
+    report += `Workers: ${workers}\n`;
+    report += `Working Days (12h+): ${fullDayRecords.length} | Partial Days: ${partialRecords.length} | Absent: ${absentCount}\n`;
     report += `Hours: ${totalHours.toFixed(1)} | OT: ${totalOT.toFixed(1)}\n`;
     report += `Gross: ₹${totalSalary.toFixed(0)} | Advance: ₹${totalAdvance.toFixed(0)} | Bonus: ₹${totalBonus.toFixed(0)}\n`;
     report += `${'='.repeat(80)}\n`;
