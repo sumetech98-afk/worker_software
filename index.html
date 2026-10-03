@@ -168,6 +168,8 @@
         .badge-overtime { background: #fff3cd; color: #856404; }
         .badge-half-day { background: #fff3cd; color: #856404; }
         .badge-leave { background: #e2e3e5; color: #383d41; }
+        .badge-full-day { background: #d4edda; color: #155724; }
+        .badge-partial { background: #fff3cd; color: #856404; }
 
         .stats-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 10px 0; }
         .stat-card { background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center; }
@@ -891,7 +893,9 @@
                     ✅ Attendance Sheet - सभी Attendance Records<br>
                     ✅ Advances Sheet - सभी Advance Records<br>
                     ✅ Bonuses Sheet - सभी Bonus Records<br>
-                    ✅ Summary Sheet - Company Info & Statistics
+                    ✅ Summary Sheet - Company Info & Statistics<br><br>
+                    <strong>🔄 Naya Update:</strong> Ab har save par <strong>purani file delete</strong> ho jaati hai aur 
+                    <strong>sirf 1 hi file</strong> rehti hai jiska naam <strong>current date + current time</strong> hota hai.
                 </div>
                 
                 <div id="folderStatus" class="folder-status">Status message here</div>
@@ -1000,9 +1004,7 @@ let waCurrentWorkerId = null;
 let waCurrentReportType = null;
 let waPendingPDF = null;
 
-// ✅ FULL DAY DUTY: 12 hours
 const FULL_DAY_HOURS = 12;
-// ✅ Overtime after 8 hours
 const OT_AFTER_HOURS = 8;
 
 // ============================================
@@ -1157,14 +1159,29 @@ async function selectFolder() {
     }
 }
 
+// ✅ UPDATED: Latest file load karo (timestamp ke hisaab se)
 async function findExistingFile() {
     try {
+        let latestFile = null;
+        let latestTime = 0;
+        
         for await (const entry of data.folderHandle.values()) {
-            if (entry.kind === 'file' && entry.name.endsWith('.xlsx') && entry.name.includes('Attendance_Data')) {
-                data.currentFileName = entry.name;
-                await loadExcelFile(entry);
-                return;
+            if (entry.kind === 'file' && 
+                entry.name.endsWith('.xlsx') && 
+                entry.name.includes('Attendance_Data')) {
+                
+                const file = await entry.getFile();
+                if (file.lastModified > latestTime) {
+                    latestTime = file.lastModified;
+                    latestFile = entry;
+                }
             }
+        }
+        
+        if (latestFile) {
+            data.currentFileName = latestFile.name;
+            await loadExcelFile(latestFile);
+            console.log('✅ Loaded latest file:', latestFile.name);
         }
     } catch(err) { console.error('Error finding file:', err); }
 }
@@ -1248,6 +1265,7 @@ async function loadExcelFile(fileHandle) {
     }
 }
 
+// ✅ UPDATED: Ek hi file rakhne ke liye - purani delete, nayi current date+time se banao
 async function saveAllData() {
     if (!data.folderHandle) {
         showFolderStatus('⚠️ Please select a folder first!', 'error');
@@ -1313,6 +1331,7 @@ async function saveAllData() {
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
         
+        // ✅ CURRENT DATE + CURRENT TIME (har save par update)
         const now = new Date();
         const timestamp = now.getFullYear() + '-' + 
                          String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -1322,6 +1341,31 @@ async function saveAllData() {
                          String(now.getSeconds()).padStart(2, '0');
         const filename = `Attendance_Data_${timestamp}.xlsx`;
         
+        // ✅ PEHLE saari purani Attendance_Data files delete karo
+        // Taaki folder me sirf EK hi file rahe
+        try {
+            const toDelete = [];
+            for await (const entry of data.folderHandle.values()) {
+                if (entry.kind === 'file' && 
+                    entry.name.startsWith('Attendance_Data_') && 
+                    entry.name.endsWith('.xlsx') &&
+                    entry.name !== filename) {
+                    toDelete.push(entry.name);
+                }
+            }
+            for (const name of toDelete) {
+                try {
+                    await data.folderHandle.removeEntry(name);
+                    console.log('🗑️ Deleted old file:', name);
+                } catch (delErr) {
+                    console.warn('Could not delete:', name, delErr);
+                }
+            }
+        } catch (scanErr) {
+            console.warn('Scan error:', scanErr);
+        }
+        
+        // ✅ Ab nayi file banao (current date + time ke saath)
         const fileHandle = await data.folderHandle.getFileHandle(filename, { create: true });
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
@@ -1332,7 +1376,7 @@ async function saveAllData() {
         saveToStorage();
         updateLastSaveTime();
         
-        showFolderStatus('✅ Data saved! File: <strong>' + filename + '</strong>', 'success');
+        showFolderStatus('✅ Data saved in: <strong>' + filename + '</strong><br><small>(Purani files delete ho gayi — sirf yahi 1 file folder me hai)</small>', 'success');
         setTimeout(listFolderFiles, 1000);
     } catch(err) {
         console.error('Save error:', err);
@@ -1456,7 +1500,6 @@ function updateLastSaveTime() {
 // ============================================
 // PDF GENERATION
 // ============================================
-
 function generateWorkerPDF(workerId, month, year, options = {}) {
     try {
         const { jsPDF } = window.jspdf;
@@ -1471,7 +1514,6 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return a.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         }).sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        // ✅ Categorize records
         const presentRecords = records.filter(r => r.status !== 'Absent');
         const fullDayRecords = presentRecords.filter(r => r.hours >= FULL_DAY_HOURS);
         const partialDayRecords = presentRecords.filter(r => r.hours > 0 && r.hours < FULL_DAY_HOURS);
@@ -1489,11 +1531,9 @@ function generateWorkerPDF(workerId, month, year, options = {}) {
             return b.workerId == workerId && d.getMonth() === month - 1 && d.getFullYear() === year;
         });
         
-        // ✅ Hours & salary include ALL present records (full + partial)
         const totalHours = presentRecords.reduce((s, r) => s + r.hours, 0);
         const totalOT = presentRecords.reduce((s, r) => s + r.overtime, 0);
         const totalSalary = presentRecords.reduce((s, r) => s + r.salary, 0);
-        const totalBreak = presentRecords.reduce((s, r) => s + (r.breakHours || 0), 0);
         const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
         const totalBonus = bonuses.reduce((s, b) => s + b.amount, 0);
         const netPayable = totalSalary - totalAdvance + totalBonus;
@@ -1851,7 +1891,6 @@ function downloadDocPDF(doc, filename) {
 // ============================================
 // WHATSAPP PDF INTEGRATION
 // ============================================
-
 function openWhatsAppForWorkerPDF(workerId) {
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
@@ -2314,7 +2353,6 @@ function calculateHours() {
         
         let netHours = totalHours - breakHours;
         if (netHours < 0) netHours = 0;
-        // ✅ Overtime after 8 hours
         let overtime = netHours > OT_AFTER_HOURS ? netHours - OT_AFTER_HOURS : 0;
         
         document.getElementById('breakHours').value = breakHours.toFixed(1);
@@ -2322,7 +2360,6 @@ function calculateHours() {
         document.getElementById('attOT').value = overtime.toFixed(1);
         document.getElementById('breakDeducted').value = breakHours > 0 ? breakHours.toFixed(1) + ' hrs deducted' : 'No break';
         
-        // ✅ Working Day Status
         const statusEl = document.getElementById('workingDayStatus');
         if (netHours >= FULL_DAY_HOURS) {
             statusEl.value = '✅ Working Day (12h+ duty)';
@@ -2628,7 +2665,6 @@ function saveAttendance() {
     const worker = data.workers.find(w => w.id === workerId);
     if (!worker) { alert('Worker not found'); return; }
     
-    // ✅ Payment includes ALL present records (full + partial)
     const salary = isAbsent ? 0 : (hours * worker.hourlyRate) + (overtime * worker.overtimeRate);
     
     data.attendance.push({
@@ -2723,9 +2759,7 @@ function showWorkerSummary(id) {
     const absentAtt = att.filter(a => a.status === 'Absent');
     
     const totalHours = presentAtt.reduce((s, a) => s + a.hours, 0);
-    const totalOT = presentAtt.reduce((s, a) => s + a.overtime, 0);
     const totalSalary = presentAtt.reduce((s, a) => s + a.salary, 0);
-    const totalBreak = presentAtt.reduce((s, a) => s + (a.breakHours || 0), 0);
     const advances = data.advances.filter(a => a.workerId === id);
     const totalAdvance = advances.reduce((s, a) => s + a.amount, 0);
     const bonuses = data.bonuses.filter(b => b.workerId === id);
