@@ -269,6 +269,13 @@
         .folder-file-item .name:hover { text-decoration: underline; }
         .folder-file-item .date { color: #6c757d; font-size: 11px; }
         .folder-file-item .size { font-size: 11px; color: #6c757d; }
+        .folder-file-item .month-badge {
+            font-size: 10px; padding: 2px 8px; border-radius: 10px;
+            background: #e3f2fd; color: #0984e3; font-weight: 600; margin-left: 6px;
+        }
+        .folder-file-item .month-badge.current {
+            background: #00b894; color: white;
+        }
 
         .select-folder-btn {
             background: #6c5ce7; color: white; border: none;
@@ -347,7 +354,7 @@
 <div class="container">
     <h1>
         <span>👷 Attendance System</span>
-        <span class="header-right">📁 Single File | 📱 WhatsApp PDF Enabled</span>
+        <span class="header-right">📁 Month-wise Files | 📱 WhatsApp PDF</span>
     </h1>
 
     <div class="company-name-input">
@@ -371,7 +378,7 @@
             <div class="card">
                 <div class="card-title">📋 Attendance Records <span class="badge-excel">Excel</span></div>
                 <div class="excel-info">
-                    <span>📁 Data stored in single Excel file</span>
+                    <span>📁 Data stored in month-wise Excel files</span>
                     <span id="recordCount">0 records</span>
                 </div>
                 
@@ -863,7 +870,7 @@
     <div id="tab-folder" class="tab-content">
         <div class="card">
             <div class="card-title">
-                📁 Personal Folder - Single File
+                📁 Personal Folder - Month-wise Files
                 <span class="badge-folder">Auto Save</span>
             </div>
             
@@ -877,7 +884,7 @@
                 <h4>📁 Select Your Personal Folder</h4>
                 <p>
                     <strong>Ek baar folder select karein</strong> - uske baad <strong>saara data (Workers + Attendance + Advances + Bonuses)</strong> 
-                    <strong>ek hi Excel file</strong> mein save hoga. Folder <strong>automatically restore</strong> ho jayega next time.
+                    <strong>mahine ke hisaab se alag Excel files</strong> mein save hoga. Folder <strong>automatically restore</strong> ho jayega next time.
                 </p>
                 
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -888,14 +895,17 @@
                 </div>
                 
                 <div style="background:#e8f5e9;padding:12px;border-radius:8px;border-left:4px solid #28a745;margin:10px 0;">
-                    <strong>📌 एक ही File में सारा Data:</strong><br>
+                    <strong>📌 Month-wise File System:</strong><br>
+                    ✅ <strong>Har mahine ki alag file</strong> — January, February, March...<br>
                     ✅ Workers Sheet - सभी Workers की List<br>
                     ✅ Attendance Sheet - सभी Attendance Records<br>
                     ✅ Advances Sheet - सभी Advance Records<br>
                     ✅ Bonuses Sheet - सभी Bonus Records<br>
                     ✅ Summary Sheet - Company Info & Statistics<br><br>
-                    <strong>🔄 Naya Update:</strong> Ab har save par <strong>purani file delete</strong> ho jaati hai aur 
-                    <strong>sirf 1 hi file</strong> rehti hai jiska naam <strong>current date + current time</strong> hota hai.
+                    <strong>🔄 Kaise kaam karta hai:</strong><br>
+                    • <strong>Same mahine</strong> me save → purani file delete, nayi file current date+time ke saath<br>
+                    • <strong>Naya mahina</strong> aane par → purane mahine ki file <strong>safe rahegi</strong>, nayi file banegi<br>
+                    • Reload par <strong>current mahine ki latest file</strong> load hogi
                 </div>
                 
                 <div id="folderStatus" class="folder-status">Status message here</div>
@@ -1159,11 +1169,16 @@ async function selectFolder() {
     }
 }
 
-// ✅ UPDATED: Latest file load karo (timestamp ke hisaab se)
+// ✅ UPDATED: Current month ki latest file load karo
 async function findExistingFile() {
     try {
-        let latestFile = null;
-        let latestTime = 0;
+        const now = new Date();
+        const currentMonthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        
+        let currentMonthFile = null;
+        let currentMonthTime = 0;
+        let anyLatestFile = null;
+        let anyLatestTime = 0;
         
         for await (const entry of data.folderHandle.values()) {
             if (entry.kind === 'file' && 
@@ -1171,17 +1186,39 @@ async function findExistingFile() {
                 entry.name.includes('Attendance_Data')) {
                 
                 const file = await entry.getFile();
-                if (file.lastModified > latestTime) {
-                    latestTime = file.lastModified;
-                    latestFile = entry;
+                
+                const datePart = entry.name.replace('Attendance_Data_', '').replace('.xlsx', '');
+                const fileMonthPrefix = datePart.substring(0, 7);
+                
+                // Current month ki file track karo
+                if (fileMonthPrefix === currentMonthPrefix) {
+                    if (file.lastModified > currentMonthTime) {
+                        currentMonthTime = file.lastModified;
+                        currentMonthFile = entry;
+                    }
+                }
+                
+                // Backup ke liye latest file bhi track karo
+                if (file.lastModified > anyLatestTime) {
+                    anyLatestTime = file.lastModified;
+                    anyLatestFile = entry;
                 }
             }
         }
         
-        if (latestFile) {
-            data.currentFileName = latestFile.name;
-            await loadExcelFile(latestFile);
-            console.log('✅ Loaded latest file:', latestFile.name);
+        const fileToLoad = currentMonthFile || anyLatestFile;
+        
+        if (fileToLoad) {
+            data.currentFileName = fileToLoad.name;
+            await loadExcelFile(fileToLoad);
+            
+            if (currentMonthFile) {
+                console.log('✅ Loaded current month file:', fileToLoad.name);
+                showFolderStatus('✅ Current month ki file load hui: <strong>' + fileToLoad.name + '</strong>', 'success');
+            } else {
+                console.log('⚠️ Current month ki file nahi mili, latest file load ki:', fileToLoad.name);
+                showFolderStatus('⚠️ Is mahine ki file nahi mili. Latest file load ki: <strong>' + fileToLoad.name + '</strong>', 'info');
+            }
         }
     } catch(err) { console.error('Error finding file:', err); }
 }
@@ -1265,7 +1302,7 @@ async function loadExcelFile(fileHandle) {
     }
 }
 
-// ✅ UPDATED: Ek hi file rakhne ke liye - purani delete, nayi current date+time se banao
+// ✅ UPDATED: Month-wise file save karo (purane mahine ki file safe rakho)
 async function saveAllData() {
     if (!data.folderHandle) {
         showFolderStatus('⚠️ Please select a folder first!', 'error');
@@ -1331,7 +1368,7 @@ async function saveAllData() {
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/octet-stream' });
         
-        // ✅ CURRENT DATE + CURRENT TIME (har save par update)
+        // ✅ CURRENT DATE + CURRENT TIME
         const now = new Date();
         const timestamp = now.getFullYear() + '-' + 
                          String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -1341,8 +1378,11 @@ async function saveAllData() {
                          String(now.getSeconds()).padStart(2, '0');
         const filename = `Attendance_Data_${timestamp}.xlsx`;
         
-        // ✅ PEHLE saari purani Attendance_Data files delete karo
-        // Taaki folder me sirf EK hi file rahe
+        // ✅ CURRENT MONTH PREFIX (e.g. "2025-01")
+        const currentMonthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        
+        // ✅ SIRF USI MONTH ki purani files delete karo
+        // Dusre mahine ki files SAFE rahengi
         try {
             const toDelete = [];
             for await (const entry of data.folderHandle.values()) {
@@ -1350,13 +1390,21 @@ async function saveAllData() {
                     entry.name.startsWith('Attendance_Data_') && 
                     entry.name.endsWith('.xlsx') &&
                     entry.name !== filename) {
-                    toDelete.push(entry.name);
+                    
+                    // Filename se month part nikalo
+                    const datePart = entry.name.replace('Attendance_Data_', '').replace('.xlsx', '');
+                    const fileMonthPrefix = datePart.substring(0, 7);
+                    
+                    // Sirf current month wali file delete karo
+                    if (fileMonthPrefix === currentMonthPrefix) {
+                        toDelete.push(entry.name);
+                    }
                 }
             }
             for (const name of toDelete) {
                 try {
                     await data.folderHandle.removeEntry(name);
-                    console.log('🗑️ Deleted old file:', name);
+                    console.log('🗑️ Deleted same-month old file:', name);
                 } catch (delErr) {
                     console.warn('Could not delete:', name, delErr);
                 }
@@ -1365,7 +1413,7 @@ async function saveAllData() {
             console.warn('Scan error:', scanErr);
         }
         
-        // ✅ Ab nayi file banao (current date + time ke saath)
+        // ✅ Nayi file banao
         const fileHandle = await data.folderHandle.getFileHandle(filename, { create: true });
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
@@ -1376,7 +1424,11 @@ async function saveAllData() {
         saveToStorage();
         updateLastSaveTime();
         
-        showFolderStatus('✅ Data saved in: <strong>' + filename + '</strong><br><small>(Purani files delete ho gayi — sirf yahi 1 file folder me hai)</small>', 'success');
+        showFolderStatus(
+            '✅ Data saved in: <strong>' + filename + '</strong><br>' +
+            '<small>📅 Month: ' + currentMonthPrefix + ' | Purane mahine ki files safe hain ✓</small>',
+            'success'
+        );
         setTimeout(listFolderFiles, 1000);
     } catch(err) {
         console.error('Save error:', err);
@@ -1455,11 +1507,32 @@ async function listFolderFiles() {
     }
     try {
         const entries = [];
+        const now = new Date();
+        const currentMonthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        
         const fileList = document.getElementById('folderFileList');
         for await (const entry of data.folderHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.xlsx')) {
                 const file = await entry.getFile();
-                entries.push({ name: entry.name, size: file.size, time: file.lastModified });
+                
+                // Month nikalo
+                let monthBadge = '';
+                if (entry.name.startsWith('Attendance_Data_')) {
+                    const datePart = entry.name.replace('Attendance_Data_', '').replace('.xlsx', '');
+                    const fileMonthPrefix = datePart.substring(0, 7);
+                    const isCurrent = fileMonthPrefix === currentMonthPrefix;
+                    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    const [y, m] = fileMonthPrefix.split('-');
+                    const monthLabel = monthNames[parseInt(m) - 1] + ' ' + y;
+                    monthBadge = `<span class="month-badge ${isCurrent ? 'current' : ''}">${monthLabel}${isCurrent ? ' ✓ Current' : ''}</span>`;
+                }
+                
+                entries.push({ 
+                    name: entry.name, 
+                    size: file.size, 
+                    time: file.lastModified,
+                    badge: monthBadge
+                });
             }
         }
         entries.sort((a, b) => b.time - a.time);
@@ -1469,7 +1542,7 @@ async function listFolderFiles() {
         }
         fileList.innerHTML = entries.map(file => `
             <div class="folder-file-item">
-                <span class="name" onclick="loadFileFromList('${file.name}')">📄 ${file.name}</span>
+                <span class="name" onclick="loadFileFromList('${file.name}')">📄 ${file.name} ${file.badge}</span>
                 <span class="date">${new Date(file.time).toLocaleString()}</span>
                 <span class="size">${(file.size/1024).toFixed(1)} KB</span>
             </div>
